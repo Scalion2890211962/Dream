@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>跨洋铁脉：中美高铁计划</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+        body { font-family: 'Noto Sans SC', sans-serif; overflow: hidden; background: #0a0a0a; }
+        .font-tech { font-family: 'Orbitron', monospace; }
+        
+        /* 动态背景 */
+        .bg-grid {
+            background-image: 
+                linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        /* 霓虹光效 */
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0,255,255,0.5), 0 0 20px rgba(0,255,255,0.3);
+        }
+        .neon-border {
+            box-shadow: 0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1);
+        }
+        
+        /* 列车动画 */
+        .train-move {
+            animation: trainShake 0.5s ease-in-out infinite;
+        }
+        @keyframes trainShake {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); }
+        }
+        
+        /* 轨道流动效果 */
+        .track-flow {
+            background: linear-gradient(90deg, transparent 0%, rgba(0,255,255,0.5) 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: flow 1s linear infinite;
+        }
+        @keyframes flow {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* 脉冲动画 */
+        .pulse-ring {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
+        }
+        
+        /* 建设模式节点 */
+        .node-point {
+            transition: all 0.3s ease;
+        }
+        .node-point:hover {
+            transform: scale(1.2);
+            filter: brightness(1.5);
+        }
+        
+        /* 驾驶模式障碍物 */
+        .obstacle {
+            animation: moveLeft 3s linear infinite;
+        }
+        @keyframes moveLeft {
+            from { transform: translateX(100vw); }
+            to { transform: translateX(-100px); }
+        }
+        
+        /* 玻璃拟态 */
+        .glass {
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 进度条动画 */
+        .progress-fill {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 悬浮提示 */
+        .tooltip {
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .has-tooltip:hover .tooltip {
+            opacity: 1;
+        }
+        
+        /* 震动效果 */
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        
+        /* 扫描线效果 */
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,255,255,0.02) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-screen w-screen overflow-hidden relative">
+
+    <!-- 动态背景层 -->
+    <div class="absolute inset-0 bg-grid opacity-30"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-blue-900/20 via-transparent to-purple-900/20"></div>
+    <div class="absolute inset-0 scanline"></div>
+
+    <!-- 游戏主容器 -->
+    <div id="gameContainer" class="relative z-10 h-full w-full flex flex-col">
+        
+        <!-- 顶部状态栏 -->
+        <header class="glass h-16 flex items-center justify-between px-4 border-b border-cyan-500/30">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-tech font-bold text-lg neon-border">
+                    CT
+                </div>
+                <div>
+                    <h1 class="font-tech text-cyan-400 text-sm tracking-wider">TRANS-PACIFIC RAIL</h1>
+                    <div class="text-xs text-gray-400">中美高铁计划</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6 font-tech text-sm">
+                <div class="has-tooltip relative">
+                    <div class="flex items-center gap-2 text-yellow-400">
+                        <span>$</span>
+                        <span id="budgetDisplay" class="text-lg font-bold">100</span>
+                        <span class="text-xs">亿</span>
+                    </div>
+                    <div class="tooltip absolute top-full mt-2 right-0 bg-black/90 border border-yellow-500/30 px-3 py-2 rounded text-xs whitespace-nowrap">
+                        建设资金 (亿美元)
+                    </div>
+                </div>
+                
+                <div class="has-tooltip relative">
+                    <div class="flex items-center gap-2 text-cyan-400">
+                        <span>⚡</span>
+                        <span id="techDisplay" class="text-lg font-bold">350</span>
+                        <span class="text-xs">km/h</span>
+                    </div>
+                    <div class="tooltip absolute top-full mt-2 right-0 bg-black/90 border border-cyan-500/30 px-3 py-2 rounded text-xs whitespace-nowrap">
+                        当前最高时速
+                    </div>
+                </div>
+                
+                <div class="has-tooltip relative">
+                    <div class="flex items-center gap-2 text-green-400">
+                        <span>🌐</span>
+                        <span id="progressDisplay" class="text-lg font-bold">0</span>
+                        <span class="text-xs">%</span>
+                    </div>
+                    <div class="tooltip absolute top-full mt-2 right-0 bg-black/90 border border-green-500/30 px-3 py-2 rounded text-xs whitespace-nowrap">
+                        全球网络完成度
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主游戏区域 -->
+        <main class="flex-1 relative overflow-hidden">
+            
+            <!-- 模式切换标签 -->
+            <div class="absolute top-4 left-1/2 transform -translate-x-1/2 flex bg-black/50 rounded-full p-1 border border-white/10 z-50">
+                <button onclick="switchMode('build')" id="buildTab" class="px-6 py-2 rounded-full text-sm font-bold transition-all bg-cyan-600 text-white shadow-lg shadow-cyan-500/30">
+                    🏗️ 建设模式
+                </button>
+                <button onclick="switchMode('drive')" id="driveTab" class="px-6 py-2 rounded-full text-sm font-bold transition-all text-gray-400 hover:text-white">
+                    🚄 驾驶模式
+                </button>
+            </div>
+
+            <!-- 建设模式界面 -->
+            <div id="buildMode" class="absolute inset-0 p-4 pt-20 overflow-y-auto">
+                <div class="max-w-6xl mx-auto">
+                    <!-- 地图可视化 -->
+                    <div class="relative h-96 bg-black/40 rounded-2xl border border-cyan-500/20 mb-6 overflow-hidden neon-border">
+                        <canvas id="mapCanvas" class="absolute inset-0 w-full h-full"></canvas>
+                        
+                        <!-- 路线标记点 -->
+                        <div class="absolute inset-0 pointer-events-none">
+                            <div class="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                                <div class="w-4 h-4 bg-red-500 rounded-full pulse-ring mb-2 mx-auto"></div>
+                                <span class="text-xs font-bold text-red-400">北京</span>
+                            </div>
+                            <div class="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                                <div class="w-4 h-4 bg-yellow-500 rounded-full mb-2 mx-auto opacity-50" id="node1"></div>
+                                <span class="text-xs text-gray-400">白令海峡</span>
+                            </div>
+                            <div class="absolute top-1/2 left-3/4 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                                <div class="w-4 h-4 bg-blue-500 rounded-full mb-2 mx-auto opacity-50" id="node2"></div>
+                                <span class="text-xs text-gray-400">阿拉斯加</span>
+                            </div>
+                            <div class="absolute bottom-1/4 right-1/4 transform translate-x-1/2 translate-y-1/2 text-center">
+                                <div class="w-4 h-4 bg-green-500 rounded-full pulse-ring mb-2 mx-auto"></div>
+                                <span class="text-xs font-bold text-green-400">洛杉矶</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 建设项目卡片 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="glass rounded-xl p-4 border-l-4 border-cyan-500 hover:bg-white/5 transition-all cursor-pointer group" onclick="startProject('tunnel')">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-cyan-400 group-hover:text-cyan-300">白令海峡隧道</h3>
+                                <span class="text-xs bg-cyan-900/50 px-2 py-1 rounded text-cyan-300">难度: ★★★★★</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-3">跨越国际日期变更线，连接欧亚与北美的关键工程。全长103公里，需克服极地冻土与深海高压。</p>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-yellow-400 font-tech">$45亿</span>
+                                <span class="text-green-400 text-xs">+15% 全球连接</span>
+                            </div>
+                            <div class="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-cyan-500 progress-fill" style="width: 0%" id="tunnelProgress"></div>
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-xl p-4 border-l-4 border-purple-500 hover:bg-white/5 transition-all cursor-pointer group" onclick="startProject('vegas')">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-purple-400 group-hover:text-purple-300">西部快线</h3>
+                                <span class="text-xs bg-purple-900/50 px-2 py-1 rounded text-purple-300">难度: ★★★☆☆</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-3">拉斯维加斯-洛杉矶线，370公里，设计时速350km。穿越莫哈韦沙漠，连接娱乐之都与经济中心。</p>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-yellow-400 font-tech">$28亿</span>
+                                <span class="text-green-400 text-xs">+8% 客运收益</span>
+                            </div>
+                            <div class="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-purple-500 progress-fill" style="width: 0%" id="vegasProgress"></div>
+                            </div>
+                        </div>
+
+                        <div class="glass rounded-xl p-4 border-l-4 border-orange-500 hover:bg-white/5 transition-all cursor-pointer group" onclick="startProject('hyperloop')">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-orange-400 group-hover:text-orange-300">真空管道高铁</h3>
+                                <span class="text-xs bg-orange-900/50 px-2 py-1 rounded text-orange-300">难度: ★★★★★</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-3">Hyperloop技术，时速1000km+。低压管道磁悬浮，未来交通的终极形态。需突破材料与密封技术。</p>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-yellow-400 font-tech">$60亿</span>
+                                <span class="text-green-400 text-xs">×3 速度倍率</span>
+                            </div>
+                            <div class="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-orange-500 progress-fill" style="width: 0%" id="hyperloopProgress"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 技术升级面板 -->
+                    <div class="glass rounded-xl p-4">
+                        <h3 class="font-bold mb-4 text-gray-300 flex items-center gap-2">
+                            <span>🔧</span> 技术研发中心
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <button onclick="upgradeTech('speed')" class="p-3 rounded-lg bg-black/30 border border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 transition-all text-left">
+                                <div class="text-cyan-400 font-bold text-sm mb-1">提速研发</div>
+                                <div class="text-xs text-gray-500">+$5亿</div>
+                                <div class="text-xs text-green-400 mt-1">+50km/h</div>
+                            </button>
+                            <button onclick="upgradeTech('safety')" class="p-3 rounded-lg bg-black/30 border border-gray-700 hover:border-green-500 hover:bg-green-900/20 transition-all text-left">
+                                <div class="text-green-400 font-bold text-sm mb-1">安全系统</div>
+                                <div class="text-xs text-gray-500">+$3亿</div>
+                                <div class="text-xs text-green-400 mt-1">事故-50%</div>
+                            </button>
+                            <button onclick="upgradeTech('eco')" class="p-3 rounded-lg bg-black/30 border border-gray-700 hover:border-yellow-500 hover:bg-yellow-900/20 transition-all text-left">
+                                <div class="text-yellow-400 font-bold text-sm mb-1">绿色能源</div>
+                                <div class="text-xs text-gray-500">+$4亿</div>
+                                <div class="text-xs text-green-400 mt-1">收益+20%</div>
+                            </button>
+                            <button onclick="upgradeTech('ai')" class="p-3 rounded-lg bg-black/30 border border-gray-700 hover:border-purple-500 hover:bg-purple-900/20 transition-all text-left">
+                                <div class="text-purple-400 font-bold text-sm mb-1">AI调度</div>
+                                <div class="text-xs text-gray-500">+$6亿</div>
+                                <div class="text-xs text-green-400 mt-1">自动化+30%</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 驾驶模式界面 -->
+            <div id="driveMode" class="absolute inset-0 hidden bg-gray-900">
+                <!-- 3D轨道视角 -->
+                <canvas id="driveCanvas" class="absolute inset-0 w-full h-full"></canvas>
+                
+                <!-- HUD界面 -->
+                <div class="absolute inset-0 pointer-events-none">
+                    <!-- 速度表 -->
+                    <div class="absolute bottom-8 left-8">
+                        <div class="relative w-32 h-32">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" stroke="#1f2937" stroke-width="8" fill="none"/>
+                                <circle id="speedCircle" cx="50" cy="50" r="45" stroke="#06b6d4" stroke-width="8" fill="none" 
+                                    stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" class="transition-all duration-300"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span id="currentSpeed" class="font-tech text-3xl font-bold text-white">0</span>
+                                <span class="text-xs text-gray-400">km/h</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 距离指示 -->
+                    <div class="absolute top-20 left-8 glass px-4 py-2 rounded-lg border-l-4 border-cyan-500">
+                        <div class="text-xs text-gray-400">当前路段</div>
+                        <div id="currentRoute" class="font-bold text-cyan-400">北京-哈尔滨</div>
+                        <div class="text-xs text-gray-500 mt-1">剩余: <span id="distanceLeft">1300</span> km</div>
+                    </div>
+
+                    <!-- 控制按钮 -->
+                    <div class="absolute bottom-8 right-8 flex gap-4 pointer-events-auto">
+                        <button id="brakeBtn" class="w-16 h-16 rounded-full bg-red-600/80 border-2 border-red-400 active:scale-95 transition-all flex items-center justify-center text-2xl shadow-lg shadow-red-500/30">
+                            🛑
+                        </button>
+                        <button id="accelBtn" class="w-20 h-20 rounded-full bg-cyan-600 border-4 border-cyan-400 active:scale-95 transition-all flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/50 train-move">
+                            🚀
+                        </button>
+                    </div>
+
+                    <!-- 警告信息 -->
+                    <div id="warningMsg" class="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-500 font-bold text-2xl hidden shake neon-text">
+                        ⚠️ 前方弯道减速！
+                    </div>
+                </div>
+            </div>
+
+            <!-- 事件弹窗 -->
+            <div id="eventModal" class="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                <div class="glass max-w-md w-full rounded-2xl p-6 border border-cyan-500/30 transform scale-95 opacity-0 transition-all duration-300" id="eventContent">
+                    <div class="text-4xl mb-4 text-center" id="eventIcon">📰</div>
+                    <h3 class="text-xl font-bold text-center mb-2 text-cyan-400" id="eventTitle">新闻标题</h3>
+                    <p class="text-gray-300 text-sm mb-6 text-center leading-relaxed" id="eventDesc">事件描述内容...</p>
+                    <div class="flex gap-3">
+                        <button onclick="closeEvent()" class="flex-1 py-3 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all">
+                            确认
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- 底部信息栏 -->
+        <footer class="glass h-8 flex items-center justify-between px-4 text-xs text-gray-500 border-t border-white/5">
+            <div class="flex items-center gap-4">
+                <span>状态: <span class="text-green-400">运营中</span></span>
+                <span>线路: <span id="activeLines" class="text-cyan-400">0</span> 条</span>
+            </div>
+            <div class="font-tech tracking-wider">SYSTEM v2.0.26</div>
+        </footer>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            budget: 100, // 亿美元
+            maxSpeed: 350, // km/h
+            globalProgress: 0, // 全球网络完成度
+            currentMode: 'build',
+            projects: {
+                tunnel: { built: false, cost: 45, progress: 0, reward: 15 },
+                vegas: { built: false, cost: 28, progress: 0, reward: 8 },
+                hyperloop: { built: false, cost: 60, progress: 0, reward: 30 }
+            },
+            tech: {
+                speed: 0,
+                safety: 0,
+                eco: 0,
+                ai: 0
+            },
+            activeLines: 0,
+            currentRoute: '北京-哈尔滨',
+            distanceLeft: 1300
+        };
+
+        // 初始化画布
+        const mapCanvas = document.getElementById('mapCanvas');
+        const mapCtx = mapCanvas.getContext('2d');
+        const driveCanvas = document.getElementById('driveCanvas');
+        const driveCtx = driveCanvas.getContext('2d');
+
+        function resizeCanvases() {
+            mapCanvas.width = mapCanvas.offsetWidth;
+            mapCanvas.height = mapCanvas.offsetHeight;
+            driveCanvas.width = driveCanvas.offsetWidth;
+            driveCanvas.height = driveCanvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+
+        // 绘制地图背景
+        function drawMap() {
+            const ctx = mapCtx;
+            const w = mapCanvas.width;
+            const h = mapCanvas.height;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // 绘制大陆轮廓（简化）
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+            ctx.lineWidth = 2;
+            
+            // 亚洲
+            ctx.beginPath();
+            ctx.moveTo(w*0.2, h*0.3);
+            ctx.lineTo(w*0.3, h*0.25);
+            ctx.lineTo(w*0.35, h*0.4);
+            ctx.lineTo(w*0.25, h*0.5);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // 北美
+            ctx.beginPath();
+            ctx.moveTo(w*0.6, h*0.3);
+            ctx.lineTo(w*0.8, h*0.25);
+            ctx.lineTo(w*0.85, h*0.5);
+            ctx.lineTo(w*0.7, h*0.6);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // 绘制已建设路线
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            
+            if (gameState.projects.tunnel.built) {
+                ctx.beginPath();
+                ctx.moveTo(w*0.3, h*0.3);
+                ctx.lineTo(w*0.5, h*0.4);
+                ctx.lineTo(w*0.7, h*0.35);
+                ctx.stroke();
+            }
+            
+            if (gameState.projects.vegas.built) {
+                ctx.beginPath();
+                ctx.moveTo(w*0.75, h*0.6);
+                ctx.lineTo(w*0.8, h*0.7);
+                ctx.stroke();
+            }
+            
+            ctx.setLineDash([]);
+        }
+
+        // 模式切换
+        function switchMode(mode) {
+            gameState.currentMode = mode;
+            const buildMode = document.getElementById('buildMode');
+            const driveMode = document.getElementById('driveMode');
+            const buildTab = document.getElementById('buildTab');
+            const driveTab = document.getElementById('driveTab');
+            
+            if (mode === 'build') {
+                buildMode.classList.remove('hidden');
+                driveMode.classList.add('hidden');
+                buildTab.classList.add('bg-cyan-600', 'text-white', 'shadow-lg');
+                buildTab.classList.remove('text-gray-400');
+                driveTab.classList.remove('bg-cyan-600', 'text-white', 'shadow-lg');
+                driveTab.classList.add('text-gray-400');
+                drawMap();
+            } else {
+                buildMode.classList.add('hidden');
+                driveMode.classList.remove('hidden');
+                driveTab.classList.add('bg-cyan-600', 'text-white', 'shadow-lg');
+                driveTab.classList.remove('text-gray-400');
+                buildTab.classList.remove('bg-cyan-600', 'text-white', 'shadow-lg');
+                buildTab.classList.add('text-gray-400');
+                initDriveMode();
+            }
+        }
+
+        // 建设项目
+        function startProject(projectId) {
+            const project = gameState.projects[projectId];
+            if (project.built) {
+                showEvent('ℹ️ 信息', '该项目已经建设完成！');
+                return;
+            }
+            
+            if (gameState.budget < project.cost) {
+                showEvent('⚠️ 资金不足', `需要 $${project.cost}亿，当前预算 $${gameState.budget}亿。请先通过运营线路赚取资金。`);
+                return;
+            }
+            
+            // 扣除资金并开始建设
+            gameState.budget -= project.cost;
+            updateDisplay();
+            
+            // 模拟建设进度
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                document.getElementById(`${projectId}Progress`).style.width = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    project.built = true;
+                    gameState.globalProgress += project.reward;
+                    gameState.activeLines++;
+                    
+                    if (projectId === 'hyperloop') {
+                        gameState.maxSpeed = 1000;
+                    }
+                    
+                    updateDisplay();
+                    drawMap();
+                    showEvent('🎉 建设完成！', `${projectId === 'tunnel' ? '白令海峡隧道' : projectId === 'vegas' ? '西部快线' : '真空管道高铁'}已通车！全球网络完成度 +${project.reward}%`);
+                }
+            }, 50);
+        }
+
+        // 技术升级
+        function upgradeTech(type) {
+            const costs = { speed: 5, safety: 3, eco: 4, ai: 6 };
+            const cost = costs[type];
+            
+            if (gameState.budget < cost) {
+                showEvent('⚠️ 资金不足', '需要更多运营资金。');
+                return;
+            }
+            
+            gameState.budget -= cost;
+            gameState.tech[type]++;
+            
+            if (type === 'speed') gameState.maxSpeed += 50;
+            
+            updateDisplay();
+            showEvent('🔧 升级成功', `${type === 'speed' ? '列车提速' : type === 'safety' ? '安全系统' : type === 'eco' ? '绿色能源' : 'AI调度'}升级完成！`);
+        }
+
+        // 驾驶模式逻辑
+        let driveLoop;
+        let train = { x: 100, y: 0, speed: 0, targetSpeed: 0, distance: 0 };
+        let obstacles = [];
+        let particles = [];
+
+        function initDriveMode() {
+            train.y = driveCanvas.height / 2;
+            train.speed = 0;
+            obstacles = [];
+            particles = [];
+            
+            if (driveLoop) cancelAnimationFrame(driveLoop);
+            animateDrive();
+        }
+
+        function animateDrive() {
+            const ctx = driveCtx;
+            const w = driveCanvas.width;
+            const h = driveCanvas.height;
+            
+            // 清空画布
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, w, h);
+            
+            // 绘制星空背景
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 137.5 + train.distance * 0.1) % w;
+                const y = (i * 71.3) % h;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            
+            // 绘制轨道
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, h/2 - 20);
+            ctx.lineTo(w, h/2 - 20);
+            ctx.moveTo(0, h/2 + 20);
+            ctx.lineTo(w, h/2 + 20);
+            ctx.stroke();
+            
+            // 轨道流动效果
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
+            ctx.lineWidth = 2;
+            const offset = (Date.now() / 10) % 50;
+            for (let i = 0; i < w + 50; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i - offset, h/2 - 20);
+                ctx.lineTo(i - offset + 30, h/2 - 20);
+                ctx.stroke();
+            }
+            
+            // 更新列车物理
+            train.speed += (train.targetSpeed - train.speed) * 0.02;
+            train.distance += train.speed * 0.001;
+            gameState.distanceLeft = Math.max(0, Math.floor(1300 - train.distance));
+            
+            // 生成粒子效果
+            if (train.speed > 100 && Math.random() > 0.7) {
+                particles.push({
+                    x: 100,
+                    y: train.y + (Math.random() - 0.5) * 20,
+                    vx: -train.speed * 0.1,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 1
+                });
+            }
+            
+            // 更新粒子
+            particles = particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+                if (p.life > 0) {
+                    ctx.fillStyle = `rgba(6, 182, 212, ${p.life})`;
+                    ctx.fillRect(p.x, p.y, 3, 3);
+                    return true;
+                }
+                return false;
+            });
+            
+            // 绘制列车
+            ctx.save();
+            ctx.translate(100, train.y);
+            
+            // 列车光晕
+            const gradient = ctx.createRadialGradient(0, 0, 10, 0, 0, 60);
+            gradient.addColorStop(0, 'rgba(6, 182, 212, 0.8)');
+            gradient.addColorStop(1, 'rgba(6, 182, 212, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-60, -40, 120, 80);
+            
+            // 列车主体
+            ctx.fillStyle = '#06b6d4';
+            ctx.beginPath();
+            ctx.moveTo(40, 0);
+            ctx.lineTo(-30, -15);
+            ctx.lineTo(-40, -15);
+            ctx.lineTo(-40, 15);
+            ctx.lineTo(-30, 15);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 车窗
+            ctx.fillStyle = '#1f2937';
+            ctx.fillRect(-20, -8, 20, 16);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(-18, -6, 16, 12);
+            
+            ctx.restore();
+            
+            // 生成障碍物
+            if (Math.random() < 0.01 && obstacles.length < 3) {
+                obstacles.push({
+                    x: w + 50,
+                    y: h/2 + (Math.random() - 0.5) * 100,
+                    type: Math.random() > 0.5 ? 'rock' : 'animal',
+                    width: 30,
+                    height: 30
+                });
+            }
+            
+            // 更新和绘制障碍物
+            obstacles = obstacles.filter(obs => {
+                obs.x -= train.speed * 0.05 + 5;
+                
+                // 绘制障碍物
+                ctx.fillStyle = obs.type === 'rock' ? '#6b7280' : '#f97316';
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                
+                // 碰撞检测
+                if (Math.abs(obs.x - 100) < 50 && Math.abs(obs.y - train.y) < 30) {
+                    if (train.speed > 200) {
+                        showEvent('💥 事故！', '速度过快导致脱轨！已自动减速并扣除维修费用。');
+                        train.targetSpeed = 0;
+                        gameState.budget = Math.max(0, gameState.budget - 5);
+                        updateDisplay();
+                    }
+                    return false;
+                }
+                
+                return obs.x > -100;
+            });
+            
+            // 更新UI
+            document.getElementById('currentSpeed').textContent = Math.floor(train.speed);
+            document.getElementById('speedCircle').style.strokeDashoffset = 283 - (train.speed / gameState.maxSpeed) * 283;
+            document.getElementById('distanceLeft').textContent = gameState.distanceLeft;
+            
+            // 到达终点
+            if (gameState.distanceLeft === 0) {
+                completeRoute();
+            }
+            
+            driveLoop = requestAnimationFrame(animateDrive);
+        }
+
+        // 控制按钮
+        const accelBtn = document.getElementById('accelBtn');
+        const brakeBtn = document.getElementById('brakeBtn');
+
+        accelBtn.addEventListener('mousedown', () => train.targetSpeed = gameState.maxSpeed);
+        accelBtn.addEventListener('mouseup', () => train.targetSpeed = gameState.maxSpeed * 0.6);
+        accelBtn.addEventListener('touchstart', (e) => { e.preventDefault(); train.targetSpeed = gameState.maxSpeed; });
+        accelBtn.addEventListener('touchend', (e) => { e.preventDefault(); train.targetSpeed = gameState.maxSpeed * 0.6; });
+
+        brakeBtn.addEventListener('mousedown', () => train.targetSpeed = 0);
+        brakeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); train.targetSpeed = 0; });
+
+        function completeRoute() {
+            train.distance = 0;
+            const reward = Math.floor(5 + gameState.tech.eco * 2);
+            gameState.budget += reward;
+            updateDisplay();
+            showEvent('🎯 到达终点！', `列车准时抵达目的地。获得运营收入 $${reward}亿。`);
+            
+            // 切换下一路段
+            const routes = ['北京-哈尔滨', '哈尔滨-海参崴', '白令海峡隧道', '阿拉斯加-温哥华', '西雅图-洛杉矶'];
+            const currentIndex = routes.indexOf(gameState.currentRoute);
+            gameState.currentRoute = routes[(currentIndex + 1) % routes.length];
+            document.getElementById('currentRoute').textContent = gameState.currentRoute;
+        }
+
+        // 事件系统
+        function showEvent(title, desc) {
+            const modal = document.getElementById('eventModal');
+            const content = document.getElementById('eventContent');
+            document.getElementById('eventTitle').textContent = title;
+            document.getElementById('eventDesc').textContent = desc;
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeEvent() {
+            const modal = document.getElementById('eventModal');
+            const content = document.getElementById('eventContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 随机新闻事件
+        const newsEvents = [
+            { title: "📰 政策变动", desc: "美国联邦政府要求高铁列车必须在美国制造，建设成本增加10%。" },
+            { title: "🌟 技术突破", desc: "中国中车研发出新一代永磁同步牵引系统，能效提升15%。" },
+            { title: "💰 投资热潮", desc: "拉斯维加斯赌场大亨投资高铁项目，获得额外资金注入。" },
+            { title: "🌍 环保抗议", desc: "环保组织反对穿越自然保护区，需要调整路线设计。" }
+        ];
+
+        setInterval(() => {
+            if (Math.random() < 0.1 && gameState.currentMode === 'build') {
+                const event = newsEvents[Math.floor(Math.random() * newsEvents.length)];
+                showEvent(event.title, event.desc);
+                
+                if (event.title.includes('资金')) {
+                    gameState.budget += 10;
+                    updateDisplay();
+                }
+            }
+        }, 30000);
+
+        // 更新显示
+        function updateDisplay() {
+            document.getElementById('budgetDisplay').textContent = gameState.budget;
+            document.getElementById('techDisplay').textContent = gameState.maxSpeed;
+            document.getElementById('progressDisplay').textContent = gameState.globalProgress;
+            document.getElementById('activeLines').textContent = gameState.activeLines;
+        }
+
+        // 初始化
+        drawMap();
+        updateDisplay();
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (gameState.currentMode === 'drive') {
+                if (e.code === 'Space') train.targetSpeed = gameState.maxSpeed;
+                if (e.code === 'KeyS') train.targetSpeed = 0;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (gameState.currentMode === 'drive' && e.code === 'Space') {
+                train.targetSpeed = gameState.maxSpeed * 0.6;
+            }
+        });
+    </script>
+</body>
+</html>
