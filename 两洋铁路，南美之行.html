@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>两洋铁路：横贯南美 | FETAB Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        
+        :root {
+            --primary: #D4A574;
+            --secondary: #2C5F2D;
+            --accent: #C75B39;
+            --dark: #0f0f0f;
+            --light: #f5f1e8;
+            --ocean: #1E3A5F;
+            --andes: #4A6741;
+            --danger: #8B0000;
+            --gold: #FFD700;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: var(--dark);
+            color: var(--light);
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        
+        /* UI Layer */
+        #uiLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .ui-panel {
+            pointer-events: auto;
+            background: rgba(15, 15, 15, 0.95);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Top HUD */
+        #topHud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .resource-card {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 100px;
+        }
+        
+        .resource-icon {
+            font-size: 1.5rem;
+        }
+        
+        .resource-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .resource-label {
+            font-size: 0.7rem;
+            color: rgba(245,241,232,0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .resource-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .resource-change {
+            font-size: 0.75rem;
+            color: #4ade80;
+        }
+        
+        .resource-change.negative {
+            color: var(--accent);
+        }
+        
+        /* Progress Bar */
+        #progressPanel {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--primary);
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--gold));
+            width: 0%;
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Bottom Controls */
+        #bottomPanel {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            background: linear-gradient(135deg, rgba(212,165,116,0.2), rgba(212,165,116,0.05));
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 80px;
+        }
+        
+        .action-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: var(--dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(212,165,116,0.4);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #666;
+            color: #666;
+        }
+        
+        .action-btn .btn-icon {
+            font-size: 1.8rem;
+        }
+        
+        .action-btn .btn-label {
+            font-size: 0.8rem;
+        }
+        
+        .action-btn .btn-cost {
+            font-size: 0.7rem;
+            color: var(--accent);
+        }
+        
+        /* Event Modal */
+        #eventModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        
+        #eventModal.active {
+            display: flex;
+        }
+        
+        .event-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 3px solid var(--accent);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90%;
+            width: 500px;
+            text-align: center;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .event-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .event-title {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .event-desc {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: rgba(245,241,232,0.9);
+        }
+        
+        .event-choices {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .choice-btn {
+            background: rgba(212,165,116,0.2);
+            border: 2px solid var(--primary);
+            color: var(--light);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .choice-btn:hover {
+            background: var(--primary);
+            color: var(--dark);
+        }
+        
+        /* Start Screen */
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            pointer-events: auto;
+        }
+        
+        .game-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        
+        .game-subtitle {
+            font-size: 1.2rem;
+            color: rgba(245,241,232,0.8);
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 600px;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, var(--primary), var(--gold));
+            border: none;
+            color: var(--dark);
+            padding: 20px 60px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(212,165,116,0.3);
+        }
+        
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(212,165,116,0.5);
+        }
+        
+        .game-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 50px;
+            max-width: 800px;
+            padding: 0 20px;
+        }
+        
+        .feature-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(212,165,116,0.3);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .feature-text {
+            font-size: 0.9rem;
+            color: rgba(245,241,232,0.8);
+        }
+        
+        /* Game Over Screen */
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+            pointer-events: auto;
+        }
+        
+        #gameOverScreen.active {
+            display: flex;
+        }
+        
+        .result-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .result-stats {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            min-width: 300px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .stat-row:last-child {
+            margin-bottom: 0;
+            padding-top: 15px;
+            border-top: 2px solid var(--primary);
+            font-weight: 700;
+            color: var(--gold);
+        }
+        
+        /* Mini Map */
+        #miniMap {
+            position: absolute;
+            top: 150px;
+            right: 10px;
+            width: 150px;
+            height: 200px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .map-segment {
+            position: absolute;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            transform-origin: left center;
+        }
+        
+        .map-segment.built {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+        
+        .map-train {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--gold);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--gold);
+            transition: all 0.5s;
+        }
+        
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            border: 2px solid var(--gold);
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 50;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .game-features {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            #miniMap {
+                width: 120px;
+                height: 160px;
+                top: 130px;
+            }
+            
+            .action-btn {
+                padding: 10px 15px;
+                min-width: 70px;
+            }
+            
+            .action-btn .btn-icon {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas Game Layer -->
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- UI Layer -->
+    <div id="uiLayer">
+        <!-- Top HUD -->
+        <div id="topHud">
+            <div class="resource-card">
+                <span class="resource-icon">💰</span>
+                <div class="resource-info">
+                    <span class="resource-label">资金</span>
+                    <span class="resource-value" id="money">100</span>
+                    <span class="resource-change" id="moneyChange">+$5M/月</span>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <span class="resource-icon">⚡</span>
+                <div class="resource-info">
+                    <span class="resource-label">政治支持</span>
+                    <span class="resource-value" id="politics">75%</span>
+                    <span class="resource-change" id="politicsChange">稳定</span>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <span class="resource-icon">🌿</span>
+                <div class="resource-info">
+                    <span class="resource-label">环保指数</span>
+                    <span class="resource-value" id="env">80%</span>
+                    <span class="resource-change" id="envChange">良好</span>
+                </div>
+            </div>
+            
+            <div class="resource-card">
+                <span class="resource-icon">👷</span>
+                <div class="resource-info">
+                    <span class="resource-label">工人</span>
+                    <span class="resource-value" id="workers">1,200</span>
+                    <span class="resource-change" id="workersChange">+50/月</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Panel -->
+        <div id="progressPanel">
+            <div class="progress-header">
+                <span>建设进度: <span id="progressText">0</span>/6500 km</span>
+                <span id="phaseText"> Phase 1: 巴西平原段</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.8rem; color: rgba(245,241,232,0.6);">
+                <span>伊列乌斯港</span>
+                <span>钱凯港</span>
+            </div>
+        </div>
+        
+        <!-- Mini Map -->
+        <div id="miniMap">
+            <canvas id="mapCanvas" width="150" height="200"></canvas>
+        </div>
+        
+        <!-- Bottom Controls -->
+        <div id="bottomPanel">
+            <button class="action-btn" id="btnBuild" onclick="game.buildTrack()">
+                <span class="btn-icon">🛤️</span>
+                <span class="btn-label">铺设轨道</span>
+                <span class="btn-cost">-$10M</span>
+            </button>
+            
+            <button class="action-btn" id="btnTunnel" onclick="game.buildTunnel()">
+                <span class="btn-icon">⛰️</span>
+                <span class="btn-label">开凿隧道</span>
+                <span class="btn-cost">-$25M</span>
+            </button>
+            
+            <button class="action-btn" id="btnBridge" onclick="game.buildBridge()">
+                <span class="btn-icon">🌉</span>
+                <span class="btn-label">架设桥梁</span>
+                <span class="btn-cost">-$20M</span>
+            </button>
+            
+            <button class="action-btn" id="btnHire" onclick="game.hireWorkers()">
+                <span class="btn-icon">👷</span>
+                <span class="btn-label">招募工人</span>
+                <span class="btn-cost">-$5M</span>
+            </button>
+            
+            <button class="action-btn" id="btnDiplomacy" onclick="game.diplomacy()">
+                <span class="btn-icon">🤝</span>
+                <span class="btn-label">外交斡旋</span>
+                <span class="btn-cost">-$8M</span>
+            </button>
+            
+            <button class="action-btn" id="btnResearch" onclick="game.research()">
+                <span class="btn-icon">🔬</span>
+                <span class="btn-label">技术研发</span>
+                <span class="btn-cost">-$15M</span>
+            </button>
+        </div>
+        
+        <!-- Notification -->
+        <div class="notification" id="notification"></div>
+    </div>
+    
+    <!-- Event Modal -->
+    <div id="eventModal">
+        <div class="event-card">
+            <div class="event-icon" id="eventIcon">🌋</div>
+            <h2 class="event-title" id="eventTitle">安第斯火山爆发</h2>
+            <p class="event-desc" id="eventDesc">火山活动导致施工暂停，需要重新规划路线或等待地质稳定...</p>
+            <div class="event-choices" id="eventChoices">
+                <button class="choice-btn" onclick="game.resolveEvent(0)">等待 (耗时2月)</button>
+                <button class="choice-btn" onclick="game.resolveEvent(1)">改道 (+$30M)</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <h1 class="game-title">两洋铁路：横贯南美</h1>
+        <p class="game-subtitle">
+            作为项目总工程师，你需要在800亿美元预算内，协调中巴秘三国资源，
+            穿越安第斯山脉，连接大西洋与太平洋。应对地震、环保抗议、政治变动，
+            在2030年前完成这条改变南美命运的钢铁动脉。
+        </p>
+        <button class="start-btn" onclick="game.start()">开始建设</button>
+        
+        <div class="game-features">
+            <div class="feature-item">
+                <div class="feature-icon">🗺️</div>
+                <div class="feature-text">6500公里真实地理模拟</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-text">50+随机历史事件</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🏛️</div>
+                <div class="feature-text">三国政治博弈系统</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen">
+        <h2 class="result-title" id="resultTitle">🎉 建设完成!</h2>
+        <div class="result-stats">
+            <div class="stat-row">
+                <span>总用时:</span>
+                <span id="finalTime">48个月</span>
+            </div>
+            <div class="stat-row">
+                <span>剩余资金:</span>
+                <span id="finalMoney">$120M</span>
+            </div>
+            <div class="stat-row">
+                <span>政治稳定性:</span>
+                <span id="finalPolitics">85%</span>
+            </div>
+            <div class="stat-row">
+                <span>环保评分:</span>
+                <span id="finalEnv">A级</span>
+            </div>
+            <div class="stat-row">
+                <span>综合评级:</span>
+                <span id="finalRank">S级工程师</span>
+            </div>
+        </div>
+        <button class="start-btn" onclick="location.reload()">再次挑战</button>
+    </div>
+
+    <script>
+        // Game Engine
+        class FETABGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.mapCanvas = document.getElementById('mapCanvas');
+                this.mapCtx = this.mapCanvas.getContext('2d');
+                
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                // Game State
+                this.state = {
+                    money: 800, // 亿美元
+                    politics: 75, // 政治支持度
+                    env: 80, // 环保指数
+                    workers: 5000,
+                    progress: 0, // 公里数
+                    totalDistance: 6500,
+                    month: 0,
+                    year: 2025,
+                    phase: 0, // 0:巴西平原, 1:亚马逊雨林, 2:安第斯山脉, 3:秘鲁高原
+                    gameOver: false,
+                    paused: false
+                };
+                
+                // Construction segments
+                this.segments = [];
+                this.currentSegment = 0;
+                
+                // Event system
+                this.events = this.initEvents();
+                this.activeEvent = null;
+                
+                // Animation
+                this.lastTime = 0;
+                this.trainPos = { x: 0, y: 0 };
+                this.particles = [];
+                
+                // Terrain generation
+                this.terrain = this.generateTerrain();
+                
+                this.loop = this.loop.bind(this);
+            }
+            
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            generateTerrain() {
+                const points = [];
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                
+                // Generate terrain profile based on real elevation
+                for (let i = 0; i <= 100; i++) {
+                    const x = (i / 100) * width;
+                    let elevation;
+                    
+                    if (i < 30) {
+                        // Brazil - relatively flat
+                        elevation = height * 0.7 + Math.sin(i * 0.5) * 20;
+                    } else if (i < 50) {
+                        // Amazon - jungle, some hills
+                        elevation = height * 0.65 + Math.sin(i * 0.8) * 40;
+                    } else if (i < 70) {
+                        // Andes - extreme mountains
+                        const peak = Math.sin((i - 50) * 0.15) * 150;
+                        elevation = height * 0.4 - Math.abs(peak);
+                    } else {
+                        // Peru coast - descending to Pacific
+                        elevation = height * 0.6 + (i - 70) * 2;
+                    }
+                    
+                    points.push({ x, y: elevation, type: this.getTerrainType(i) });
+                }
+                return points;
+            }
+            
+            getTerrainType(index) {
+                if (index < 30) return 'plains';
+                if (index < 50) return 'jungle';
+                if (index < 70) return 'mountains';
+                return 'coast';
+            }
+            
+            initEvents() {
+                return [
+                    {
+                        id: 'volcano',
+                        title: '安第斯火山活动',
+                        icon: '🌋',
+                        desc: '乌图伦古火山突然活跃，施工队必须紧急撤离！',
+                        choices: ['暂停施工(2月)', '改道绕行(+$30M)'],
+                        effects: [
+                            { type: 'delay', months: 2 },
+                            { type: 'cost', amount: 30, progress: -50 }
+                        ],
+                        phase: [2] // Only in Andes phase
+                    },
+                    {
+                        id: 'protest',
+                        title: '原住民环保抗议',
+                        icon: '🌿',
+                        desc: '当地社区反对铁路穿越圣地，环保组织介入...',
+                        choices: ['谈判补偿(-$20M)', '强行推进(政治-20%)'],
+                        effects: [
+                            { type: 'cost', amount: 20, politics: 5 },
+                            { type: 'politics', amount: -20, env: -15 }
+                        ],
+                        phase: [1, 2]
+                    },
+                    {
+                        id: 'election',
+                        title: '巴西大选',
+                        icon: '🗳️',
+                        desc: '新政府质疑项目必要性，要求重新评估...',
+                        choices: ['增加就业承诺(工人+2000)', '缩减预算(速度-50%)'],
+                        effects: [
+                            { type: 'workers', amount: 2000, cost: 10 },
+                            { type: 'speed', multiplier: 0.5, months: 6 }
+                        ],
+                        phase: [0, 1]
+                    },
+                    {
+                        id: 'landslide',
+                        title: '山体滑坡',
+                        icon: '⛰️',
+                        desc: '暴雨引发泥石流，已铺设轨道被毁...',
+                        choices: ['重建(-$15M)', '等待旱季(3月)'],
+                        effects: [
+                            { type: 'cost', amount: 15, progress: -30 },
+                            { type: 'delay', months: 3 }
+                        ],
+                        phase: [2, 3]
+                    },
+                    {
+                        id: 'china_invest',
+                        title: '中国追加投资',
+                        icon: '💰',
+                        desc: 'BRICS峰会达成新协议，中国提供额外融资...',
+                        choices: ['接受资金(+$100M)', '保持独立(政治+10%)'],
+                        effects: [
+                            { type: 'money', amount: 100 },
+                            { type: 'politics', amount: 10 }
+                        ],
+                        phase: [0, 1, 2, 3]
+                    },
+                    {
+                        id: 'usa_pressure',
+                        title: '美国干预',
+                        icon: '🦅',
+                        desc: '美国通过NGO施压，质疑项目"债务陷阱"性质...',
+                        choices: ['公开透明(政治-5%, 环保+10%)', '无视继续(政治-15%)'],
+                        effects: [
+                            { type: 'mixed', politics: -5, env: 10 },
+                            { type: 'politics', amount: -15 }
+                        ],
+                        phase: [1, 2]
+                    },
+                    {
+                        id: 'tech_breakthrough',
+                        title: '技术突破',
+                        icon: '🔬',
+                        desc: '中国工程团队研发新型高原施工机械...',
+                        choices: ['全面采用(速度+30%)', '保守测试(成本-10%)'],
+                        effects: [
+                            { type: 'speed', multiplier: 1.3, months: 12 },
+                            { type: 'efficiency', costReduction: 0.1 }
+                        ],
+                        phase: [2]
+                    }
+                ];
+            }
+            
+            start() {
+                document.getElementById('startScreen').style.display = 'none';
+                this.state.paused = false;
+                this.lastTime = performance.now();
+                requestAnimationFrame(this.loop);
+                
+                // Start monthly income
+                setInterval(() => this.monthlyUpdate(), 2000); // 2 seconds = 1 month
+                
+                this.showNotification('项目启动！伊列乌斯港奠基仪式举行');
+            }
+            
+            monthlyUpdate() {
+                if (this.state.gameOver || this.state.paused) return;
+                
+                this.state.month++;
+                if (this.state.month % 12 === 0) this.state.year++;
+                
+                // Income from trade
+                const income = 5 + Math.floor(this.state.progress / 1000);
+                this.state.money += income;
+                this.updateUI();
+                
+                // Random events (20% chance per month)
+                if (Math.random() < 0.2 && !this.activeEvent) {
+                    this.triggerRandomEvent();
+                }
+                
+                // Auto progress if workers available
+                if (this.state.workers > 0 && this.state.money > 0) {
+                    const baseSpeed = 10; // km per month
+                    const workerBonus = Math.min(this.state.workers / 1000, 20);
+                    const terrainPenalty = this.getTerrainPenalty();
+                    
+                    const progress = (baseSpeed + workerBonus) * terrainPenalty;
+                    this.build(progress);
+                }
+                
+                // Check win condition
+                if (this.state.progress >= this.state.totalDistance) {
+                    this.win();
+                }
+                
+                // Check lose conditions
+                if (this.state.money <= -50 || this.state.politics <= 0) {
+                    this.lose();
+                }
+            }
+            
+            getTerrainPenalty() {
+                const phase = this.state.phase;
+                if (phase === 0) return 1.2; // Plains - fast
+                if (phase === 1) return 0.8; // Jungle - slow
+                if (phase === 2) return 0.4; // Andes - very slow
+                return 0.9; // Coast
+            }
+            
+            build(amount) {
+                const cost = amount * 0.5; // $0.5M per km
+                if (this.state.money >= cost) {
+                    this.state.money -= cost;
+                    this.state.progress += amount;
+                    
+                    // Update phase based on progress
+                    const ratio = this.state.progress / this.state.totalDistance;
+                    if (ratio < 0.3) this.state.phase = 0;
+                    else if (ratio < 0.5) this.state.phase = 1;
+                    else if (ratio < 0.7) this.state.phase = 2;
+                    else this.state.phase = 3;
+                    
+                    this.addParticles(this.trainPos.x, this.trainPos.y, 'construction');
+                    this.updateUI();
+                }
+            }
+            
+            // Player actions
+            buildTrack() {
+                if (this.state.money >= 10) {
+                    this.state.money -= 10;
+                    this.build(20);
+                    this.showNotification('加速铺设轨道 +20km');
+                    this.addParticles(this.trainPos.x, this.trainPos.y, 'spark');
+                }
+            }
+            
+            buildTunnel() {
+                if (this.state.money >= 25 && this.state.phase === 2) {
+                    this.state.money -= 25;
+                    this.build(15); // Slow but necessary for mountains
+                    this.state.env -= 5;
+                    this.showNotification('安第斯隧道贯通 +15km');
+                } else if (this.state.phase !== 2) {
+                    this.showNotification('仅在安第斯山脉阶段可用');
+                }
+            }
+            
+            buildBridge() {
+                if (this.state.money >= 20 && (this.state.phase === 1 || this.state.phase === 3)) {
+                    this.state.money -= 20;
+                    this.build(25);
+                    this.showNotification('跨河大桥建成 +25km');
+                }
+            }
+            
+            hireWorkers() {
+                if (this.state.money >= 5) {
+                    this.state.money -= 5;
+                    this.state.workers += 1000;
+                    this.showNotification('招募1000名当地工人');
+                }
+            }
+            
+            diplomacy() {
+                if (this.state.money >= 8) {
+                    this.state.money -= 8;
+                    this.state.politics += 10;
+                    this.state.env += 5;
+                    this.showNotification('三国峰会达成新协议');
+                }
+            }
+            
+            research() {
+                if (this.state.money >= 15) {
+                    this.state.money -= 15;
+                    this.showNotification('高原施工技术升级！未来6月速度+20%');
+                    // Implementation would add temporary buff
+                }
+            }
+            
+            triggerRandomEvent() {
+                const validEvents = this.events.filter(e => 
+                    e.phase.includes(this.state.phase)
+                );
+                const event = validEvents[Math.floor(Math.random() * validEvents.length)];
+                
+                this.activeEvent = event;
+                this.state.paused = true;
+                
+                document.getElementById('eventIcon').textContent = event.icon;
+                document.getElementById('eventTitle').textContent = event.title;
+                document.getElementById('eventDesc').textContent = event.desc;
+                
+                const choicesDiv = document.getElementById('eventChoices');
+                choicesDiv.innerHTML = '';
+                event.choices.forEach((choice, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.textContent = choice;
+                    btn.onclick = () => this.resolveEvent(idx);
+                    choicesDiv.appendChild(btn);
+                });
+                
+                document.getElementById('eventModal').classList.add('active');
+            }
+            
+            resolveEvent(choiceIndex) {
+                const event = this.activeEvent;
+                const effect = event.effects[choiceIndex];
+                
+                if (effect.type === 'cost') {
+                    this.state.money -= effect.amount;
+                    if (effect.progress) this.state.progress += effect.progress;
+                    if (effect.politics) this.state.politics += effect.politics;
+                } else if (effect.type === 'delay') {
+                    // Delay handled by skipping updates
+                    for (let i = 0; i < effect.months; i++) {
+                        this.state.month++;
+                        if (this.state.month % 12 === 0) this.state.year++;
+                    }
+                } else if (effect.type === 'money') {
+                    this.state.money += effect.amount;
+                } else if (effect.type === 'politics') {
+                    this.state.politics += effect.amount;
+                    if (effect.env) this.state.env += effect.env;
+                } else if (effect.type === 'workers') {
+                    this.state.workers += effect.amount;
+                    this.state.money -= effect.cost || 0;
+                } else if (effect.type === 'mixed') {
+                    this.state.politics += effect.politics || 0;
+                    this.state.env += effect.env || 0;
+                }
+                
+                document.getElementById('eventModal').classList.remove('active');
+                this.activeEvent = null;
+                this.state.paused = false;
+                this.updateUI();
+            }
+            
+            updateUI() {
+                document.getElementById('money').textContent = this.state.money + 'M';
+                document.getElementById('politics').textContent = this.state.politics + '%';
+                document.getElementById('env').textContent = this.state.env + '%';
+                document.getElementById('workers').textContent = this.state.workers.toLocaleString();
+                document.getElementById('progressText').textContent = Math.floor(this.state.progress);
+                
+                const progressPercent = (this.state.progress / this.state.totalDistance) * 100;
+                document.getElementById('progressFill').style.width = progressPercent + '%';
+                
+                const phases = ['Phase 1: 巴西平原段', 'Phase 2: 亚马逊雨林', 'Phase 3: 安第斯穿越', 'Phase 4: 秘鲁高原'];
+                document.getElementById('phaseText').textContent = phases[this.state.phase];
+                
+                // Update button states
+                document.getElementById('btnTunnel').disabled = this.state.phase !== 2;
+                document.getElementById('btnBridge').disabled = !(this.state.phase === 1 || this.state.phase === 3);
+            }
+            
+            showNotification(text) {
+                const notif = document.getElementById('notification');
+                notif.textContent = text;
+                notif.classList.add('show');
+                setTimeout(() => notif.classList.remove('show'), 2000);
+            }
+            
+            addParticles(x, y, type) {
+                for (let i = 0; i < 10; i++) {
+                    this.particles.push({
+                        x, y,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: (Math.random() - 0.5) * 4,
+                        life: 1,
+                        type
+                    });
+                }
+            }
+            
+            win() {
+                this.state.gameOver = true;
+                document.getElementById('gameOverScreen').classList.add('active');
+                document.getElementById('resultTitle').textContent = '🎉 铁路贯通！';
+                
+                const months = this.state.month;
+                const years = Math.floor(months / 12);
+                const remainingMonths = months % 12;
+                document.getElementById('finalTime').textContent = `${years}年${remainingMonths}月`;
+                document.getElementById('finalMoney').textContent = `$${this.state.money}M`;
+                document.getElementById('finalPolitics').textContent = `${this.state.politics}%`;
+                
+                let envGrade = 'A';
+                if (this.state.env > 90) envGrade = 'S';
+                else if (this.state.env < 60) envGrade = 'B';
+                else if (this.state.env < 40) envGrade = 'C';
+                document.getElementById('finalEnv').textContent = envGrade + '级';
+                
+                let rank = '工程师';
+                if (this.state.money > 200 && this.state.env > 85) rank = '传奇规划师';
+                else if (this.state.politics > 80) rank = '外交大师';
+                document.getElementById('finalRank').textContent = rank;
+            }
+            
+            lose() {
+                this.state.gameOver = true;
+                document.getElementById('gameOverScreen').classList.add('active');
+                document.getElementById('resultTitle').textContent = '⚠️ 项目终止';
+                document.querySelector('.result-stats').innerHTML = '<p style="color: var(--accent); font-size: 1.2rem;">项目因资金枯竭或政治崩溃而被迫中止...</p>';
+            }
+            
+            draw() {
+                const ctx = this.ctx;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                
+                // Clear
+                ctx.fillStyle = '#0f0f0f';
+                ctx.fillRect(0, 0, w, h);
+                
+                // Draw sky gradient based on phase
+                const gradient = ctx.createLinearGradient(0, 0, 0, h);
+                if (this.state.phase === 0) {
+                    gradient.addColorStop(0, '#87CEEB');
+                    gradient.addColorStop(1, '#E0F6FF');
+                } else if (this.state.phase === 1) {
+                    gradient.addColorStop(0, '#2C5F2D');
+                    gradient.addColorStop(1, '#4A6741');
+                } else if (this.state.phase === 2) {
+                    gradient.addColorStop(0, '#4A5568');
+                    gradient.addColorStop(1, '#718096');
+                } else {
+                    gradient.addColorStop(0, '#F6AD55');
+                    gradient.addColorStop(1, '#ED8936');
+                }
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, w, h * 0.6);
+                
+                // Draw terrain
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                this.terrain.forEach((point, i) => {
+                    const x = (i / 100) * w;
+                    const y = point.y;
+                    ctx.lineTo(x, y);
+                });
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                
+                const terrainGradient = ctx.createLinearGradient(0, 0, 0, h);
+                if (this.state.phase === 0) {
+                    terrainGradient.addColorStop(0, '#2C5F2D');
+                    terrainGradient.addColorStop(1, '#1a3a1a');
+                } else if (this.state.phase === 1) {
+                    terrainGradient.addColorStop(0, '#064e3b');
+                    terrainGradient.addColorStop(1, '#065f46');
+                } else if (this.state.phase === 2) {
+                    terrainGradient.addColorStop(0, '#744210');
+                    terrainGradient.addColorStop(1, '#975a16');
+                } else {
+                    terrainGradient.addColorStop(0, '#d69e2e');
+                    terrainGradient.addColorStop(1, '#b7791f');
+                }
+                ctx.fillStyle = terrainGradient;
+                ctx.fill();
+                
+                // Draw built track
+                const progressRatio = this.state.progress / this.state.totalDistance;
+                const trackEndX = progressRatio * w;
+                
+                ctx.beginPath();
+                ctx.strokeStyle = '#D4A574';
+                ctx.lineWidth = 4;
+                this.terrain.forEach((point, i) => {
+                    const x = (i / 100) * w;
+                    if (x <= trackEndX) {
+                        if (i === 0) ctx.moveTo(x, point.y - 10);
+                        else ctx.lineTo(x, point.y - 10);
+                    }
+                });
+                ctx.stroke();
+                
+                // Draw rails
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < trackEndX; i += 20) {
+                    const terrainIdx = Math.floor((i / w) * 100);
+                    if (terrainIdx < this.terrain.length) {
+                        const y = this.terrain[terrainIdx].y - 10;
+                        ctx.beginPath();
+                        ctx.moveTo(i, y - 3);
+                        ctx.lineTo(i + 10, y - 3);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Update train position
+                const trainTerrainIdx = Math.floor(progressRatio * 100);
+                if (trainTerrainIdx < this.terrain.length) {
+                    this.trainPos = {
+                        x: trackEndX,
+                        y: this.terrain[trainTerrainIdx].y - 25
+                    };
+                }
+                
+                // Draw train
+                this.drawTrain(this.trainPos.x, this.trainPos.y);
+                
+                // Draw particles
+                this.particles = this.particles.filter(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    
+                    if (p.life > 0) {
+                        ctx.fillStyle = p.type === 'spark' ? '#FFD700' : `rgba(212,165,116,${p.life})`;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        return true;
+                    }
+                    return false;
+                });
+                
+                // Draw weather effects
+                if (this.state.phase === 1) {
+                    this.drawRain();
+                } else if (this.state.phase === 2) {
+                    this.drawSnow();
+                }
+                
+                // Draw mini map
+                this.drawMiniMap();
+            }
+            
+            drawTrain(x, y) {
+                const ctx = this.ctx;
+                
+                // Train body
+                ctx.fillStyle = '#C75B39';
+                ctx.fillRect(x - 15, y, 30, 20);
+                
+                // Windows
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(x - 10, y + 5, 8, 8);
+                ctx.fillRect(x + 2, y + 5, 8, 8);
+                
+                // Wheels
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(x - 8, y + 20, 5, 0, Math.PI * 2);
+                ctx.arc(x + 8, y + 20, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Smoke
+                if (Math.random() > 0.7) {
+                    this.particles.push({
+                        x: x - 15,
+                        y: y,
+                        vx: -2,
+                        vy: -1,
+                        life: 1,
+                        type: 'smoke'
+                    });
+                }
+            }
+            
+            drawRain() {
+                const ctx = this.ctx;
+                ctx.strokeStyle = 'rgba(173, 216, 230, 0.6)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 50; i++) {
+                    const x = Math.random() * this.canvas.width;
+                    const y = Math.random() * this.canvas.height;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x - 2, y + 10);
+                    ctx.stroke();
+                }
+            }
+            
+            drawSnow() {
+                const ctx = this.ctx;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                for (let i = 0; i < 30; i++) {
+                    const x = Math.random() * this.canvas.width;
+                    const y = Math.random() * this.canvas.height * 0.6;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            drawMiniMap() {
+                const ctx = this.mapCtx;
+                const w = 150;
+                const h = 200;
+                
+                ctx.clearRect(0, 0, w, h);
+                
+                // Background
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0, 0, w, h);
+                
+                // Simplified route
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(20, 180);
+                ctx.lineTo(40, 160); // Brazil
+                ctx.lineTo(75, 100); // Andes peak
+                ctx.lineTo(130, 40); // Pacific
+                ctx.stroke();
+                
+                // Built portion
+                const ratio = this.state.progress / this.state.totalDistance;
+                ctx.strokeStyle = '#D4A574';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(20, 180);
+                
+                if (ratio > 0) {
+                    const x = 20 + (110 * ratio);
+                    const y = 180 - (140 * ratio);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                }
+                
+                // Train position
+                const tx = 20 + (110 * ratio);
+                const ty = 180 - (140 * ratio);
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Labels
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.font = '10px sans-serif';
+                ctx.fillText('大西洋', 10, 195);
+                ctx.fillText('太平洋', 110, 20);
+            }
+            
+            loop(timestamp) {
+                if (!this.state.gameOver) {
+                    this.draw();
+                    requestAnimationFrame(this.loop);
+                }
+            }
+        }
+        
+        // Initialize game
+        const game = new FETABGame();
+    </script>
+</body>
+</html>
