@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人口星球：平衡纪元</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            background: #1a202c;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #2d3748;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #4299e1;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 14px;
+            color: #a0aec0;
+        }
+        /* 数值面板 */
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            background: #374151;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-item .label {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-bottom: 5px;
+        }
+        .stat-item .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .stat-item .value.danger {
+            color: #e53e3e;
+        }
+        .stat-item .value.success {
+            color: #48bb78;
+        }
+        /* 资源生产区 */
+        .resource-area {
+            margin-bottom: 20px;
+        }
+        .resource-area h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #9f7aea;
+        }
+        .resource-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .res-btn {
+            background: #4299e1;
+            border: none;
+            color: #fff;
+            padding: 15px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .res-btn:disabled {
+            background: #718096;
+            cursor: not-allowed;
+        }
+        .res-btn:hover:not(:disabled) {
+            background: #3182ce;
+        }
+        /* 事件面板 */
+        .event-panel {
+            background: #374151;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .event-panel.active {
+            display: block;
+        }
+        .event-panel h3 {
+            font-size: 16px;
+            color: #ed8936;
+            margin-bottom: 10px;
+        }
+        .event-panel .event-desc {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #e2e8f0;
+        }
+        .event-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .event-btn {
+            background: #9f7aea;
+            border: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .event-btn:hover {
+            background: #805ad5;
+        }
+        /* 控制区 */
+        .control-area {
+            text-align: center;
+        }
+        .next-month-btn {
+            background: #48bb78;
+            border: none;
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .next-month-btn:hover {
+            background: #38a169;
+        }
+        /* 游戏结束面板 */
+        .game-over {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .game-over-content {
+            background: #2d3748;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+        }
+        .game-over h2 {
+            font-size: 24px;
+            color: #e53e3e;
+            margin-bottom: 10px;
+        }
+        .game-over p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+        }
+        .restart-btn {
+            background: #4299e1;
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 游戏头部 -->
+        <div class="header">
+            <h1>人口星球：平衡纪元</h1>
+            <p>公元2150年 · 全球人口突破500亿 · 你是资源调度官</p>
+        </div>
+
+        <!-- 数值面板 -->
+        <div class="stats-panel">
+            <div class="stat-item">
+                <div class="label">当前人口（亿）</div>
+                <div class="value success" id="population">500</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">游戏月</div>
+                <div class="value" id="month">1</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">粮食储备</div>
+                <div class="value" id="food">1000</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">能源储备</div>
+                <div class="value" id="energy">800</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">医疗资源</div>
+                <div class="value" id="medical">600</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">生态值</div>
+                <div class="value" id="eco">70</div>
+            </div>
+        </div>
+
+        <!-- 资源生产区 -->
+        <div class="resource-area">
+            <h2>资源生产</h2>
+            <div class="resource-buttons">
+                <button class="res-btn" id="btn-food" data-res="food">生产粮食<br><span id="cd-food">(冷却: 0s)</span></button>
+                <button class="res-btn" id="btn-energy" data-res="energy">生产能源<br><span id="cd-energy">(冷却: 0s)</span></button>
+                <button class="res-btn" id="btn-medical" data-res="medical">生产医疗<br><span id="cd-medical">(冷却: 0s)</span></button>
+                <button class="res-btn" id="btn-house" data-res="house">建造住房<br><span id="cd-house">(冷却: 0s)</span></button>
+                <button class="res-btn" id="btn-eco" data-res="eco">环保治理<br><span id="cd-eco">(冷却: 0s)</span></button>
+                <button class="res-btn" id="btn-upgrade" data-res="upgrade">升级工厂<br><span id="cd-upgrade">(冷却: 0s)</span></button>
+            </div>
+        </div>
+
+        <!-- 随机事件面板 -->
+        <div class="event-panel" id="event-panel">
+            <h3>突发事件！</h3>
+            <div class="event-desc" id="event-desc"></div>
+            <div class="event-buttons">
+                <button class="event-btn" id="event-btn1">选项1</button>
+                <button class="event-btn" id="event-btn2">选项2</button>
+            </div>
+        </div>
+
+        <!-- 控制区 -->
+        <div class="control-area">
+            <button class="next-month-btn" id="next-month">进入下一个月</button>
+        </div>
+    </div>
+
+    <!-- 游戏结束面板 -->
+    <div class="game-over" id="game-over">
+        <div class="game-over-content">
+            <h2 id="over-title">游戏结束</h2>
+            <p id="over-desc"></p>
+            <button class="restart-btn" id="restart">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏核心数据
+        let gameData = {
+            population: 500, // 人口（亿）
+            month: 1, // 当前游戏月
+            resources: {
+                food: 1000,
+                energy: 800,
+                medical: 600,
+                house: 500,
+                eco: 70
+            },
+            cd: { // 冷却时间（秒）
+                food: 0,
+                energy: 0,
+                medical: 0,
+                house: 0,
+                eco: 0,
+                upgrade: 0
+            },
+            cdMax: { // 最大冷却时间
+                food: 5,
+                energy: 6,
+                medical: 7,
+                house: 8,
+                eco: 10,
+                upgrade: 15
+            },
+            upgradeLevel: 1, // 工厂等级
+            gameOver: false
+        };
+
+        // DOM元素
+        const elPopulation = document.getElementById('population');
+        const elMonth = document.getElementById('month');
+        const elFood = document.getElementById('food');
+        const elEnergy = document.getElementById('energy');
+        const elMedical = document.getElementById('medical');
+        const elEco = document.getElementById('eco');
+        const elEventPanel = document.getElementById('event-panel');
+        const elEventDesc = document.getElementById('event-desc');
+        const elEventBtn1 = document.getElementById('event-btn1');
+        const elEventBtn2 = document.getElementById('event-btn2');
+        const elNextMonth = document.getElementById('next-month');
+        const elGameOver = document.getElementById('game-over');
+        const elOverTitle = document.getElementById('over-title');
+        const elOverDesc = document.getElementById('over-desc');
+        const elRestart = document.getElementById('restart');
+        const resButtons = document.querySelectorAll('.res-btn');
+
+        // 随机事件列表
+        const events = [
+            {
+                desc: "非洲地区粮食歉收，需紧急调拨100单位粮食，否则人口减少20亿",
+                option1: { text: "调拨粮食", food: -100, population: 0 },
+                option2: { text: "不调拨", food: 0, population: -20 }
+            },
+            {
+                desc: "新能源技术突破，投入200单位能源研发，后续能源产量+20%",
+                option1: { text: "投入研发", energy: -200, upgrade: +0.2 },
+                option2: { text: "放弃研发", energy: 0, upgrade: 0 }
+            },
+            {
+                desc: "全球疫情爆发，需消耗150单位医疗资源，否则疾病扩散人口减少30亿",
+                option1: { text: "投入医疗", medical: -150, population: 0 },
+                option2: { text: "暂缓应对", medical: 0, population: -30 }
+            },
+            {
+                desc: "工业污染加剧，生态值下降10点，需消耗100单位资源治理",
+                option1: { text: "治理污染", eco: +10, food: -50, energy: -50 },
+                option2: { text: "无视污染", eco: -10, population: -15 }
+            },
+            {
+                desc: "住房短缺，无家可归人口增加，需建造100单位住房，否则人口减少10亿",
+                option1: { text: "建造住房", house: -100, population: 0 },
+                option2: { text: "暂不建造", house: 0, population: -10 }
+            }
+        ];
+
+        // 更新UI显示
+        function updateUI() {
+            elPopulation.textContent = gameData.population;
+            elMonth.textContent = gameData.month;
+            elFood.textContent = gameData.resources.food;
+            elEnergy.textContent = gameData.resources.energy;
+            elMedical.textContent = gameData.resources.medical;
+            elEco.textContent = gameData.resources.eco;
+
+            // 危险数值标红
+            elPopulation.className = gameData.population < 450 ? 'value danger' : 'value success';
+            elEco.className = gameData.resources.eco < 50 ? 'value danger' : 'value';
+
+            // 更新冷却时间
+            for (let key in gameData.cd) {
+                const elCd = document.getElementById(`cd-${key}`);
+                elCd.textContent = `(冷却: ${gameData.cd[key]}s)`;
+                const btn = document.getElementById(`btn-${key}`);
+                btn.disabled = gameData.cd[key] > 0;
+            }
+        }
+
+        // 生产资源
+        function produceResource(resType) {
+            if (gameData.cd[resType] > 0 || gameData.gameOver) return;
+
+            // 设置冷却时间
+            gameData.cd[resType] = gameData.cdMax[resType] / gameData.upgradeLevel;
+
+            // 生产资源
+            switch(resType) {
+                case 'food':
+                    gameData.resources.food += 200 * gameData.upgradeLevel;
+                    break;
+                case 'energy':
+                    gameData.resources.energy += 150 * gameData.upgradeLevel;
+                    break;
+                case 'medical':
+                    gameData.resources.medical += 100 * gameData.upgradeLevel;
+                    break;
+                case 'house':
+                    gameData.resources.house += 80 * gameData.upgradeLevel;
+                    break;
+                case 'eco':
+                    gameData.resources.eco += 10 * gameData.upgradeLevel;
+                    break;
+                case 'upgrade':
+                    gameData.upgradeLevel += 0.1;
+                    break;
+            }
+
+            // 启动冷却倒计时
+            const cdInterval = setInterval(() => {
+                gameData.cd[resType]--;
+                if (gameData.cd[resType] <= 0) {
+                    gameData.cd[resType] = 0;
+                    clearInterval(cdInterval);
+                }
+                updateUI();
+            }, 1000);
+
+            updateUI();
+        }
+
+        // 触发随机事件
+        function triggerRandomEvent() {
+            const randomEvent = events[Math.floor(Math.random() * events.length)];
+            elEventDesc.textContent = randomEvent.desc;
+            elEventBtn1.textContent = randomEvent.option1.text;
+            elEventBtn2.textContent = randomEvent.option2.text;
+            elEventPanel.classList.add('active');
+
+            // 绑定事件选项点击
+            elEventBtn1.onclick = () => {
+                handleEventChoice(randomEvent.option1);
+            };
+            elEventBtn2.onclick = () => {
+                handleEventChoice(randomEvent.option2);
+            };
+        }
+
+        // 处理事件选择
+        function handleEventChoice(option) {
+            // 应用选项效果
+            if (option.food) gameData.resources.food += option.food;
+            if (option.energy) gameData.resources.energy += option.energy;
+            if (option.medical) gameData.resources.medical += option.medical;
+            if (option.eco) gameData.resources.eco += option.eco;
+            if (option.population) gameData.population += option.population;
+            if (option.upgrade) gameData.upgradeLevel += option.upgrade;
+
+            // 关闭事件面板
+            elEventPanel.classList.remove('active');
+            updateUI();
+            // 检查游戏是否结束
+            checkGameOver();
+        }
+
+        // 进入下一个月
+        function nextMonth() {
+            if (gameData.gameOver) return;
+
+            // 每月资源消耗（人口越多消耗越大）
+            const foodConsume = gameData.population * 1.5;
+            const energyConsume = gameData.population * 1.2;
+            const medicalConsume = gameData.population * 1;
+
+            gameData.resources.food -= foodConsume;
+            gameData.resources.energy -= energyConsume;
+            gameData.resources.medical -= medicalConsume;
+
+            // 资源不足导致人口减少
+            if (gameData.resources.food < 0) {
+                gameData.population -= Math.abs(gameData.resources.food) / 10;
+                gameData.resources.food = 0;
+            }
+            if (gameData.resources.energy < 0) {
+                gameData.population -= Math.abs(gameData.resources.energy) / 12;
+                gameData.resources.energy = 0;
+            }
+            if (gameData.resources.medical < 0) {
+                gameData.population -= Math.abs(gameData.resources.medical) / 8;
+                gameData.resources.medical = 0;
+            }
+
+            // 生态值过低导致人口减少
+            if (gameData.resources.eco < 30) {
+                gameData.population -= 10;
+            }
+
+            // 人口不能为负
+            gameData.population = Math.max(0, Math.floor(gameData.population));
+            // 推进月份
+            gameData.month++;
+
+            // 每5个月触发随机事件
+            if (gameData.month % 5 === 0) {
+                triggerRandomEvent();
+            }
+
+            updateUI();
+            checkGameOver();
+        }
+
+        // 检查游戏结束条件
+        function checkGameOver() {
+            // 失败条件：人口<400亿 或 游戏月>30且人口<450亿
+            if (gameData.population < 400) {
+                gameData.gameOver = true;
+                elOverTitle.textContent = "游戏失败";
+                elOverDesc.textContent = `第${gameData.month}月，人口仅剩${gameData.population}亿，地球资源崩溃，人类文明衰退！`;
+                elGameOver.style.display = 'flex';
+            }
+            // 胜利条件：撑过30个月且人口≥450亿
+            else if (gameData.month > 30 && gameData.population >= 450) {
+                gameData.gameOver = true;
+                elOverTitle.textContent = "游戏胜利";
+                elOverDesc.textContent = `恭喜！你撑过了30个月，当前人口${gameData.population}亿，成功维持了地球的平衡！`;
+                elGameOver.style.display = 'flex';
+            }
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            gameData = {
+                population: 500,
+                month: 1,
+                resources: {
+                    food: 1000,
+                    energy: 800,
+                    medical: 600,
+                    house: 500,
+                    eco: 70
+                },
+                cd: {
+                    food: 0,
+                    energy: 0,
+                    medical: 0,
+                    house: 0,
+                    eco: 0,
+                    upgrade: 0
+                },
+                cdMax: {
+                    food: 5,
+                    energy: 6,
+                    medical: 7,
+                    house: 8,
+                    eco: 10,
+                    upgrade: 15
+                },
+                upgradeLevel: 1,
+                gameOver: false
+            };
+            elGameOver.style.display = 'none';
+            elEventPanel.classList.remove('active');
+            updateUI();
+        }
+
+        // 绑定事件
+        resButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                produceResource(btn.dataset.res);
+            });
+        });
+        elNextMonth.addEventListener('click', nextMonth);
+        elRestart.addEventListener('click', restartGame);
+
+        // 初始化游戏
+        updateUI();
+    </script>
+</body>
+</html>
