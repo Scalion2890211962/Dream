@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尼亚加拉瀑布水电站建设工程师</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* 游戏容器 */
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 标题区域 */
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .game-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #f8c537;
+        }
+
+        .game-header p {
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* 游戏主界面 */
+        .game-main {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* 场景区域 */
+        .scene-area {
+            flex: 2;
+            min-width: 600px;
+            height: 500px;
+            background: #0f4c81;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            border: 5px solid #2c3e50;
+        }
+
+        /* 尼亚加拉瀑布场景 */
+        .niagara-scene {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(to bottom, #87CEEB 0%, #1E90FF 70%, #00008B 100%);
+        }
+
+        .waterfall {
+            position: absolute;
+            top: 100px;
+            left: 30%;
+            width: 200px;
+            height: 300px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.1) 100%);
+            border-radius: 0 0 10px 10px;
+            animation: waterfall-flow 1s infinite linear;
+        }
+
+        @keyframes waterfall-flow {
+            0% { background-position: 0 0; }
+            100% { background-position: 200px 300px; }
+        }
+
+        .dam {
+            position: absolute;
+            bottom: 50px;
+            left: 20%;
+            width: 60%;
+            height: 150px;
+            background: #8B4513;
+            border-top: 5px solid #A0522D;
+            display: none;
+        }
+
+        .turbine {
+            position: absolute;
+            bottom: 70px;
+            left: 45%;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 5px solid #696969;
+            background: #708090;
+            display: none;
+            animation: turbine-spin 2s infinite linear;
+        }
+
+        @keyframes turbine-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .power-meter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 150px;
+            height: 100px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .control-panel h2 {
+            color: #f8c537;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f8c537;
+            padding-bottom: 10px;
+        }
+
+        /* 步骤导航 */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .step-btn {
+            padding: 12px 20px;
+            background: #3498db;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .step-btn.active {
+            background: #f8c537;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .step-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .step-btn:hover:not(:disabled) {
+            background: #2980b9;
+            transform: translateX(5px);
+        }
+
+        /* 参数控制区 */
+        .params {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .param-group label {
+            font-size: 0.9rem;
+        }
+
+        .param-slider {
+            width: 100%;
+            height: 5px;
+            background: #7f8c8d;
+            outline: none;
+            border-radius: 5px;
+        }
+
+        .param-value {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #f8c537;
+        }
+
+        /* 操作按钮 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            background: #27ae60;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #2ecc71;
+        }
+
+        .action-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        /* 信息面板 */
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            min-height: 100px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* 成功弹窗 */
+        .success-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2c3e50;
+            border: 5px solid #f8c537;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .success-modal h2 {
+            color: #f8c537;
+            margin-bottom: 20px;
+        }
+
+        .success-modal p {
+            margin-bottom: 20px;
+            max-width: 500px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            background: #3498db;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 992px) {
+            .game-main {
+                flex-direction: column;
+            }
+            .scene-area {
+                min-width: 100%;
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 游戏标题 -->
+        <div class="game-header">
+            <h1>尼亚加拉瀑布水电站建设工程师</h1>
+            <p>欢迎来到尼亚加拉瀑布水电站建设模拟游戏！你将体验从选址、设计到施工、运营的完整水电站建设流程，学习水电工程的核心知识，成为一名合格的水电站建设工程师。</p>
+        </div>
+
+        <!-- 游戏主界面 -->
+        <div class="game-main">
+            <!-- 场景区域 -->
+            <div class="scene-area">
+                <div class="niagara-scene">
+                    <div class="waterfall"></div>
+                    <div class="dam" id="dam"></div>
+                    <div class="turbine" id="turbine"></div>
+                    <div class="power-meter" id="powerMeter">
+                        <div>发电量</div>
+                        <div id="powerValue">0 MW</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制面板 -->
+            <div class="control-panel">
+                <h2>工程控制面板</h2>
+                
+                <!-- 建设步骤 -->
+                <div class="steps">
+                    <button class="step-btn active" id="step1" onclick="changeStep(1)">1. 选址评估</button>
+                    <button class="step-btn" id="step2" onclick="changeStep(2)" disabled>2. 大坝设计</button>
+                    <button class="step-btn" id="step3" onclick="changeStep(3)" disabled>3. 涡轮机安装</button>
+                    <button class="step-btn" id="step4" onclick="changeStep(4)" disabled>4. 发电调试</button>
+                    <button class="step-btn" id="step5" onclick="changeStep(5)" disabled>5. 运营优化</button>
+                </div>
+
+                <!-- 参数控制区 -->
+                <div class="params" id="paramsPanel">
+                    <!-- 选址参数 -->
+                    <div class="param-group" id="paramStep1">
+                        <label>水流速度评估 (m/s)</label>
+                        <input type="range" min="1" max="10" value="5" class="param-slider" id="flowSpeed">
+                        <div class="param-value" id="flowSpeedValue">5 m/s</div>
+                    </div>
+
+                    <!-- 大坝参数 -->
+                    <div class="param-group" id="paramStep2" style="display: none;">
+                        <label>大坝高度 (m)</label>
+                        <input type="range" min="50" max="200" value="100" class="param-slider" id="damHeight">
+                        <div class="param-value" id="damHeightValue">100 m</div>
+                    </div>
+
+                    <!-- 涡轮机参数 -->
+                    <div class="param-group" id="paramStep3" style="display: none;">
+                        <label>涡轮机效率 (%)</label>
+                        <input type="range" min="50" max="95" value="75" class="param-slider" id="turbineEfficiency">
+                        <div class="param-value" id="turbineEfficiencyValue">75%</div>
+                    </div>
+
+                    <!-- 发电参数 -->
+                    <div class="param-group" id="paramStep4" style="display: none;">
+                        <label>水流量调节 (m³/s)</label>
+                        <input type="range" min="1000" max="10000" value="5000" class="param-slider" id="waterFlow">
+                        <div class="param-value" id="waterFlowValue">5000 m³/s</div>
+                    </div>
+
+                    <!-- 运营参数 -->
+                    <div class="param-group" id="paramStep5" style="display: none;">
+                        <label>发电量目标 (MW)</label>
+                        <input type="range" min="500" max="2000" value="1000" class="param-slider" id="powerTarget">
+                        <div class="param-value" id="powerTargetValue">1000 MW</div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-buttons">
+                    <button class="action-btn" id="applyBtn" onclick="applyStep()">应用参数</button>
+                    <button class="action-btn" id="nextBtn" onclick="nextStep()" disabled>下一步</button>
+                </div>
+
+                <!-- 信息面板 -->
+                <div class="info-panel" id="infoPanel">
+                    <p>📌 第一步：选址评估</p>
+                    <p>尼亚加拉瀑布的平均水流速度约为5-8 m/s，这是建设水电站的理想条件。请评估当前水流速度，为后续设计提供数据支持。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成功弹窗 -->
+        <div class="success-modal" id="successModal">
+            <h2>🎉 恭喜！你已成为合格的水电站工程师</h2>
+            <p>你成功完成了尼亚加拉瀑布水电站的建设和运营！你的水电站当前发电量达到了 <span id="finalPower">1200</span> MW，能够为超过100万户家庭提供电力。</p>
+            <p>核心知识点：水电站通过利用水流的势能驱动涡轮机旋转，将机械能转化为电能。尼亚加拉瀑布水电站是北美最重要的水电资源之一，年发电量超过240亿千瓦时。</p>
+            <button class="modal-btn" onclick="restartGame()">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentStep = 1;
+        let totalSteps = 5;
+        let powerGeneration = 0;
+
+        // 初始化游戏
+        window.onload = function() {
+            // 显示第一步参数面板
+            document.getElementById('paramsPanel').style.display = 'flex';
+            
+            // 绑定滑块值显示事件
+            bindSliderEvents();
+        };
+
+        // 绑定滑块值显示事件
+        function bindSliderEvents() {
+            // 水流速度滑块
+            const flowSpeed = document.getElementById('flowSpeed');
+            flowSpeed.addEventListener('input', function() {
+                document.getElementById('flowSpeedValue').textContent = this.value + ' m/s';
+            });
+
+            // 大坝高度滑块
+            const damHeight = document.getElementById('damHeight');
+            damHeight.addEventListener('input', function() {
+                document.getElementById('damHeightValue').textContent = this.value + ' m';
+            });
+
+            // 涡轮机效率滑块
+            const turbineEfficiency = document.getElementById('turbineEfficiency');
+            turbineEfficiency.addEventListener('input', function() {
+                document.getElementById('turbineEfficiencyValue').textContent = this.value + '%';
+            });
+
+            // 水流量滑块
+            const waterFlow = document.getElementById('waterFlow');
+            waterFlow.addEventListener('input', function() {
+                document.getElementById('waterFlowValue').textContent = this.value + ' m³/s';
+            });
+
+            // 发电量目标滑块
+            const powerTarget = document.getElementById('powerTarget');
+            powerTarget.addEventListener('input', function() {
+                document.getElementById('powerTargetValue').textContent = this.value + ' MW';
+            });
+        }
+
+        // 切换步骤
+        function changeStep(step) {
+            // 只能切换到已解锁的步骤
+            if (step > currentStep) return;
+
+            // 更新步骤按钮状态
+            for (let i = 1; i <= totalSteps; i++) {
+                const btn = document.getElementById('step' + i);
+                if (i === step) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+
+            // 显示对应步骤的参数
+            hideAllParams();
+            document.getElementById('paramStep' + step).style.display = 'flex';
+
+            // 更新信息面板
+            updateInfoPanel(step);
+        }
+
+        // 隐藏所有参数面板
+        function hideAllParams() {
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById('paramStep' + i).style.display = 'none';
+            }
+        }
+
+        // 应用当前步骤参数
+        function applyStep() {
+            switch(currentStep) {
+                case 1:
+                    // 选址评估完成
+                    const flowSpeed = parseInt(document.getElementById('flowSpeed').value);
+                    if (flowSpeed >= 5 && flowSpeed <= 8) {
+                        showInfo('选址评估通过！尼亚加拉瀑布的水流条件非常适合建设水电站。');
+                        unlockNextStep();
+                    } else {
+                        showInfo('⚠️ 水流速度评估异常，请调整到5-8 m/s的合理范围。');
+                    }
+                    break;
+                
+                case 2:
+                    // 大坝设计完成
+                    const damHeight = parseInt(document.getElementById('damHeight').value);
+                    if (damHeight >= 80 && damHeight <= 150) {
+                        document.getElementById('dam').style.display = 'block';
+                        showInfo('大坝设计合理！已完成尼亚加拉瀑布水电站大坝建设。');
+                        unlockNextStep();
+                    } else {
+                        showInfo('⚠️ 大坝高度设计不合理，请调整到80-150 m的安全范围。');
+                    }
+                    break;
+                
+                case 3:
+                    // 涡轮机安装完成
+                    const turbineEfficiency = parseInt(document.getElementById('turbineEfficiency').value);
+                    if (turbineEfficiency >= 70 && turbineEfficiency <= 90) {
+                        document.getElementById('turbine').style.display = 'block';
+                        showInfo('涡轮机安装完成！效率达到' + turbineEfficiency + '%，符合行业标准。');
+                        unlockNextStep();
+                    } else {
+                        showInfo('⚠️ 涡轮机效率设置不合理，请调整到70-90%的高效范围。');
+                    }
+                    break;
+                
+                case 4:
+                    // 发电调试完成
+                    const waterFlow = parseInt(document.getElementById('waterFlow').value);
+                    powerGeneration = calculatePower(waterFlow);
+                    document.getElementById('powerMeter').style.display = 'block';
+                    document.getElementById('powerValue').textContent = powerGeneration + ' MW';
+                    showInfo('发电调试完成！当前发电量：' + powerGeneration + ' MW。');
+                    unlockNextStep();
+                    break;
+                
+                case 5:
+                    // 运营优化完成
+                    const powerTarget = parseInt(document.getElementById('powerTarget').value);
+                    if (Math.abs(powerTarget - powerGeneration) < 200) {
+                        showInfo('运营优化成功！发电量已稳定在目标值附近。');
+                        // 显示成功弹窗
+                        document.getElementById('finalPower').textContent = powerGeneration;
+                        document.getElementById('successModal').style.display = 'block';
+                    } else {
+                        showInfo('⚠️ 发电量与目标值差距过大，请重新调整运营参数。');
+                    }
+                    break;
+            }
+        }
+
+        // 计算发电量
+        function calculatePower(waterFlow) {
+            // 简化的发电量计算公式
+            // 发电量 (MW) = 水流量 × 效率系数 × 常数
+            const efficiency = parseInt(document.getElementById('turbineEfficiency').value) / 100;
+            const height = parseInt(document.getElementById('damHeight').value);
+            const power = Math.round((waterFlow * height * efficiency * 0.0001));
+            return power > 0 ? power : 100;
+        }
+
+        // 解锁下一步
+        function unlockNextStep() {
+            if (currentStep < totalSteps) {
+                document.getElementById('step' + (currentStep + 1)).disabled = false;
+                document.getElementById('nextBtn').disabled = false;
+            }
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                changeStep(currentStep);
+                document.getElementById('nextBtn').disabled = true;
+                
+                // 重置信息面板
+                updateInfoPanel(currentStep);
+            }
+        }
+
+        // 更新信息面板
+        function updateInfoPanel(step) {
+            const infoPanel = document.getElementById('infoPanel');
+            const infoTexts = [
+                "",
+                "📌 第一步：选址评估\n尼亚加拉瀑布的平均水流速度约为5-8 m/s，这是建设水电站的理想条件。请评估当前水流速度，为后续设计提供数据支持。",
+                "📌 第二步：大坝设计\n大坝高度直接影响水能利用效率，尼亚加拉水电站大坝高度建议在80-150米之间。请设置合理的大坝高度。",
+                "📌 第三步：涡轮机安装\n涡轮机是水电站的核心设备，效率通常在70-90%之间。请调整涡轮机效率参数，确保发电效率。",
+                "📌 第四步：发电调试\n水流量是影响发电量的关键因素，通过调节水流量可以控制发电量。请设置合理的水流量参数。",
+                "📌 第五步：运营优化\n根据实际发电量，调整运营参数，使发电量达到目标值。优秀的工程师能够精准控制发电量！"
+            ];
+            
+            // 替换换行符为<br>
+            infoPanel.innerHTML = infoTexts[step].replace(/\n/g, '<br>');
+        }
+
+        // 显示信息
+        function showInfo(message) {
+            const infoPanel = document.getElementById('infoPanel');
+            infoPanel.innerHTML += '<br><br>' + message;
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
