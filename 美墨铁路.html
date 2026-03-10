@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US-Mexico Cross-Border Railway</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 头部样式 */
+        header {
+            background: linear-gradient(135deg, #003366, #005599);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+
+        /* 地图容器 */
+        .map-container {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+            height: 500px;
+            overflow: hidden;
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?q=80&w=1000&auto=format&fit=crop') center/cover;
+            position: relative;
+            border-radius: 8px;
+        }
+
+        /* 铁路线路动画 */
+        .railway-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            width: 80%;
+            height: 8px;
+            background: linear-gradient(90deg, #8B4513, #A0522D, #8B4513);
+            border-radius: 4px;
+            transform: translateY(-50%);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .railway-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -20%;
+            width: 20%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: trainMove 8s linear infinite;
+        }
+
+        @keyframes trainMove {
+            0% { left: -20%; }
+            100% { left: 120%; }
+        }
+
+        /* 标记点样式 */
+        .marker {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #FF4500;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .marker:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        .marker.us {
+            top: 50%;
+            left: 10%;
+        }
+
+        .marker.mx {
+            top: 50%;
+            left: 90%;
+        }
+
+        .marker-label {
+            position: absolute;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            transform: translate(-50%, calc(-100% - 8px));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .marker:hover .marker-label {
+            opacity: 1;
+        }
+
+        /* 信息卡片区域 */
+        .info-section {
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .info-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .info-card h3 {
+            color: #003366;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .info-card ul {
+            list-style: none;
+        }
+
+        .info-card li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .info-card li:last-child {
+            border-bottom: none;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .map-container {
+                height: 350px;
+                margin: 2rem auto;
+                padding: 1rem;
+            }
+
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 页脚 */
+        footer {
+            background: #003366;
+            color: white;
+            text-align: center;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面头部 -->
+    <header>
+        <h1>US-Mexico Cross-Border Railway Project</h1>
+        <p>Connecting Nations, Boosting Trade, Building Futures</p>
+    </header>
+
+    <!-- 地图可视化区域 -->
+    <div class="map-container">
+        <div class="map">
+            <!-- 铁路线路 -->
+            <div class="railway-line"></div>
+            
+            <!-- 美国端点标记 -->
+            <div class="marker us">
+                <div class="marker-label">United States (El Paso)</div>
+            </div>
+            
+            <!-- 墨西哥端点标记 -->
+            <div class="marker mx">
+                <div class="marker-label">Mexico (Ciudad Juárez)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 项目信息区域 -->
+    <div class="info-section">
+        <div class="info-card">
+            <h3>Project Overview</h3>
+            <ul>
+                <li><strong>Total Length:</strong> 24 km (15 miles)</li>
+                <li><strong>Construction Start:</strong> 2026</li>
+                <li><strong>Expected Completion:</strong> 2028</li>
+                <li><strong>Main Purpose:</strong> Freight & Passenger Transport</li>
+            </ul>
+        </div>
+
+        <div class="info-card">
+            <h3>Economic Benefits</h3>
+            <ul>
+                <li><strong>Trade Boost:</strong> 35% increase in bilateral trade</li>
+                <li><strong>Job Creation:</strong> 10,000+ construction jobs</li>
+                <li><strong>Economic Growth:</strong> $2.5B annual GDP contribution</li>
+                <li><strong>Logistics Cost:</strong> 20% reduction in transport costs</li>
+            </ul>
+        </div>
+
+        <div class="info-card">
+            <h3>Technical Specifications</h3>
+            <ul>
+                <li><strong>Track Gauge:</strong> 1,435 mm (Standard Gauge)</li>
+                <li><strong>Max Speed:</strong> 120 km/h (75 mph)</li>
+                <li><strong>Electrification:</strong> 25 kV AC Overhead Line</li>
+                <li><strong>Capacity:</strong> 100 trains per day</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer>
+        <p>US-Mexico Cross-Border Railway © 2026 | All Rights Reserved</p>
+    </footer>
+
+    <script>
+        // 简单的交互增强
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为标记点添加点击事件
+            const markers = document.querySelectorAll('.marker');
+            markers.forEach(marker => {
+                marker.addEventListener('click', function() {
+                    const label = this.querySelector('.marker-label').textContent;
+                    alert(`You clicked on: ${label}`);
+                });
+            });
+
+            // 页面滚动动画
+            const animateOnScroll = function() {
+                const mapContainer = document.querySelector('.map-container');
+                const rect = mapContainer.getBoundingClientRect();
+                const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+                
+                if (isInView) {
+                    mapContainer.style.opacity = '1';
+                    mapContainer.style.transform = 'translateY(0)';
+                }
+            };
+
+            // 初始化样式
+            document.querySelector('.map-container').style.opacity = '0';
+            document.querySelector('.map-container').style.transform = 'translateY(20px)';
+            document.querySelector('.map-container').style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+
+            // 监听滚动事件
+            window.addEventListener('scroll', animateOnScroll);
+            // 初始执行一次
+            animateOnScroll();
+        });
+    </script>
+</body>
+</html>
