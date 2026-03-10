@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机器人的主动性养成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: #f0f8ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        /* 游戏容器 */
+        .game-container {
+            width: 800px;
+            height: 500px;
+            background: #e8f4f8;
+            border: 3px solid #2c3e50;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 机器人样式 */
+        .robot {
+            width: 60px;
+            height: 80px;
+            background: #3498db;
+            border-radius: 8px;
+            position: absolute;
+            bottom: 20px;
+            left: 50px;
+            transition: all 0.5s ease;
+            z-index: 2;
+        }
+        .robot::after {
+            content: "";
+            width: 30px;
+            height: 20px;
+            background: #2980b9;
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            border-radius: 4px;
+        }
+        /* 机器人状态标识（电量/主动性） */
+        .robot-status-tag {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-size: 12px;
+            color: #fff;
+            background: #2c3e50;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        /* 任务元素：垃圾、充电桩、人物 */
+        .trash {
+            width: 40px;
+            height: 40px;
+            background: #7f8c8d;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 20px;
+            left: 300px;
+            z-index: 1;
+        }
+        .charger {
+            width: 50px;
+            height: 70px;
+            background: #2ecc71;
+            position: absolute;
+            bottom: 20px;
+            left: 500px;
+            z-index: 1;
+            display: none;
+        }
+        .person {
+            width: 40px;
+            height: 60px;
+            background: #e67e22;
+            border-radius: 8px;
+            position: absolute;
+            bottom: 20px;
+            left: 700px;
+            z-index: 1;
+            display: none;
+        }
+        /* 任务提示（主动行为时显示） */
+        .task-tip {
+            position: absolute;
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+            z-index: 3;
+        }
+        /* 控制面板 */
+        .control-panel {
+            width: 800px;
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn-group {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            margin-right: 10px;
+            background: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        /* 状态显示 */
+        .status {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #2c3e50;
+            line-height: 1.8;
+        }
+        .initiative-value, .battery-value {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        /* 关卡提示 */
+        .level-tip {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        /* 弹窗 */
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+        .modal button {
+            margin-top: 20px;
+        }
+        /* 主动行为动画 */
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .active-action {
+            animation: blink 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <h1>机器人的主动性养成</h1>
+    <div class="game-container">
+        <div class="level-tip">关卡 1：引导机器人捡垃圾</div>
+        <div class="robot" id="robot">
+            <div class="robot-status-tag" id="robot-tag">电量：100% | 被动</div>
+        </div>
+        <div class="trash" id="trash"></div>
+        <div class="charger" id="charger"></div>
+        <div class="person" id="person"></div>
+        <div class="task-tip" id="task-tip">机器人主动行动中...</div>
+    </div>
+
+    <div class="control-panel">
+        <div class="btn-group">
+            <button id="cmd-pick-trash">指令：捡垃圾</button>
+            <button id="cmd-charge">指令：充电</button>
+            <button id="cmd-greet">指令：打招呼</button>
+            <button id="reward">奖励机器人</button>
+        </div>
+        <div class="status">
+            机器人状态：<span id="robot-status">被动（需指令触发行动）</span><br>
+            主动性值：<span class="initiative-value" id="initiative-val">0</span>/100<br>
+            机器人电量：<span class="battery-value" id="battery-val">100</span>%（低于30%会优先主动充电）
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <h3 id="modal-title"></h3>
+        <p id="modal-content"></p>
+        <button id="modal-btn">继续</button>
+    </div>
+
+    <script>
+        // 核心变量
+        const robot = document.getElementById('robot');
+        const trash = document.getElementById('trash');
+        const charger = document.getElementById('charger');
+        const person = document.getElementById('person');
+        const initiativeVal = document.getElementById('initiative-val');
+        const batteryVal = document.getElementById('battery-val');
+        const robotStatus = document.getElementById('robot-status');
+        const robotTag = document.getElementById('robot-tag');
+        const taskTip = document.getElementById('task-tip');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const modalBtn = document.getElementById('modal-btn');
+
+        let initiative = 0; // 主动性值
+        let level = 1; // 当前关卡
+        let robotState = 'passive'; // passive:被动 semi-active:半主动 active:主动
+        let battery = 100; // 机器人电量（0-100）
+        let autoActionTimer = null; // 主动行动定时器
+
+        // 弹窗显示函数
+        function showModal(title, content) {
+            modalTitle.textContent = title;
+            modalContent.textContent = content;
+            modal.style.display = 'block';
+        }
+
+        // 弹窗关闭
+        modalBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            // 关卡推进逻辑
+            if (level === 1 && initiative >= 30) {
+                level2Init();
+            } else if (level === 2 && initiative >= 60) {
+                level3Init();
+            } else if (level === 3 && initiative >= 100) {
+                showModal('游戏通关！', '你的机器人已经完全具备主动性，能够根据需求自主决策完成任务啦！');
+                setTimeout(() => {
+                    location.reload(); // 重置游戏
+                }, 2000);
+            }
+        });
+
+        // 更新机器人状态标签
+        function updateRobotTag() {
+            let stateText = robotState === 'passive' ? '被动' : (robotState === 'semi-active' ? '半主动' : '主动');
+            robotTag.textContent = `电量：${battery}% | ${stateText}`;
+        }
+
+        // 更新主动性值和状态
+        function updateInitiative() {
+            initiative = Math.min(initiative, 100); // 上限100
+            initiativeVal.textContent = initiative;
+            
+            // 梯度化状态切换
+            if (initiative >= 100) {
+                robotState = 'active';
+                robotStatus.textContent = '主动（自主识别需求，优先完成高优先级任务）';
+                startFullActiveAction(); // 完全主动行为
+            } else if (initiative >= 50) {
+                robotState = 'semi-active';
+                robotStatus.textContent = '半主动（随机自主触发简单任务，无需指令）';
+                startSemiActiveAction(); // 半主动随机行为
+            } else {
+                robotState = 'passive';
+                robotStatus.textContent = '被动（需指令触发行动）';
+                stopAutoAction(); // 停止主动行为
+            }
+            updateRobotTag();
+        }
+
+        // 消耗电量（执行任务/时间流逝）
+        function consumeBattery(amount) {
+            battery = Math.max(battery - amount, 0);
+            batteryVal.textContent = battery;
+            updateRobotTag();
+            // 电量低时主动提示（半主动/主动状态下会优先充电）
+            if (battery < 30 && robotState !== 'passive') {
+                showModal('机器人电量低', '机器人检测到电量不足，会优先主动去充电哦！');
+            }
+        }
+
+        // 充电恢复电量
+        function rechargeBattery() {
+            battery = Math.min(battery + 50, 100);
+            batteryVal.textContent = battery;
+            updateRobotTag();
+        }
+
+        // 指令：捡垃圾
+        document.getElementById('cmd-pick-trash').addEventListener('click', () => {
+            if (level < 1) return;
+            robot.style.left = '300px'; // 机器人移动到垃圾位置
+            consumeBattery(10); // 执行任务消耗电量
+            setTimeout(() => {
+                trash.style.display = 'none'; // 捡走垃圾
+                initiative += 10; // 主动性值增加
+                updateInitiative();
+                showModal('指令执行成功', '机器人按指令捡走了垃圾，主动性+10！消耗电量10%～');
+                // 3秒后重新生成垃圾
+                setTimeout(() => {
+                    if (level >= 1) trash.style.display = 'block';
+                }, 3000);
+            }, 500);
+        });
+
+        // 指令：充电（关卡2解锁）
+        document.getElementById('cmd-charge').addEventListener('click', () => {
+            if (level < 2) return;
+            robot.style.left = '500px'; // 移动到充电桩
+            setTimeout(() => {
+                rechargeBattery(); // 充电
+                initiative += 15;
+                updateInitiative();
+                showModal('指令执行成功', '机器人按指令完成充电，电量+50%，主动性+15！');
+            }, 500);
+        });
+
+        // 指令：打招呼（关卡3解锁）
+        document.getElementById('cmd-greet').addEventListener('click', () => {
+            if (level < 3) return;
+            robot.style.left = '700px'; // 移动到人物位置
+            consumeBattery(15); // 执行任务消耗电量
+            setTimeout(() => {
+                initiative += 20;
+                updateInitiative();
+                showModal('指令执行成功', '机器人按指令和人打招呼，主动性+20！消耗电量15%～');
+            }, 500);
+        });
+
+        // 奖励机器人：加速主动性提升
+        document.getElementById('reward').addEventListener('click', () => {
+            if (initiative >= 100) return;
+            initiative += 5;
+            updateInitiative();
+            showModal('奖励成功', '机器人获得奖励，主动性+5！它更愿意主动做事了～');
+        });
+
+        // 半主动状态：随机触发简单任务（无需玩家指令）
+        function startSemiActiveAction() {
+            stopAutoAction(); // 先停止已有定时器
+            autoActionTimer = setInterval(() => {
+                // 随机决定是否行动（50%概率）
+                if (Math.random() > 0.5) {
+                    const randomTask = Math.floor(Math.random() * (level >= 3 ? 3 : (level >= 2 ? 2 : 1)));
+                    taskTip.style.display = 'block';
+                    taskTip.style.left = `${parseInt(robot.style.left) + 70}px`;
+                    taskTip.style.top = `${parseInt(robot.style.top) - 30}px`;
+                    robot.classList.add('active-action');
+
+                    if (randomTask === 0 && trash.style.display !== 'none') {
+                        // 主动捡垃圾
+                        taskTip.textContent = '我主动去捡垃圾啦！';
+                        robot.style.left = '300px';
+                        setTimeout(() => {
+                            trash.style.display = 'none';
+                            consumeBattery(10);
+                            initiative += 3; // 主动行为额外加少量主动性
+                            updateInitiative();
+                            taskTip.style.display = 'none';
+                            robot.classList.remove('active-action');
+                            // 重新生成垃圾
+                            setTimeout(() => {
+                                if (level >= 1) trash.style.display = 'block';
+                            }, 3000);
+                        }, 800);
+                    } else if (randomTask === 1 && level >= 2 && battery < 80) {
+                        // 主动充电（电量低于80%时优先）
+                        taskTip.textContent = '我主动去充电啦！';
+                        robot.style.left = '500px';
+                        setTimeout(() => {
+                            rechargeBattery();
+                            initiative += 4;
+                            updateInitiative();
+                            taskTip.style.display = 'none';
+                            robot.classList.remove('active-action');
+                        }, 800);
+                    } else if (randomTask === 2 && level >= 3) {
+                        // 主动打招呼
+                        taskTip.textContent = '我主动打招呼啦！';
+                        robot.style.left = '700px';
+                        setTimeout(() => {
+                            consumeBattery(15);
+                            initiative += 5;
+                            updateInitiative();
+                            taskTip.style.display = 'none';
+                            robot.classList.remove('active-action');
+                        }, 800);
+                    }
+                }
+            }, 5000); // 每5秒检测一次
+        }
+
+        // 完全主动状态：按需求优先级自主决策
+        function startFullActiveAction() {
+            stopAutoAction();
+            autoActionTimer = setInterval(() => {
+                taskTip.style.display = 'block';
+                taskTip.style.left = `${parseInt(robot.style.left) + 70}px`;
+                taskTip.style.top = `${parseInt(robot.style.top) - 30}px`;
+                robot.classList.add('active-action');
+
+                // 优先级1：电量低于30%，优先充电
+                if (battery < 30) {
+                    taskTip.textContent = '电量不足！优先充电～';
+                    robot.style.left = '500px';
+                    setTimeout(() => {
+                        rechargeBattery();
+                        initiative += 2;
+                        updateInitiative();
+                        taskTip.style.display = 'none';
+                        robot.classList.remove('active-action');
+                    }, 800);
+                } 
+                // 优先级2：有垃圾则捡垃圾
+                else if (trash.style.display !== 'none') {
+                    taskTip.textContent = '看到垃圾了，主动清理！';
+                    robot.style.left = '300px';
+                    setTimeout(() => {
+                        trash.style.display = 'none';
+                        consumeBattery(10);
+                        initiative += 2;
+                        updateInitiative();
+                        taskTip.style.display = 'none';
+                        robot.classList.remove('active-action');
+                        setTimeout(() => {
+                            if (level >= 1) trash.style.display = 'block';
+                        }, 3000);
+                    }, 800);
+                }
+                // 优先级3：主动打招呼
+                else if (level >= 3) {
+                    taskTip.textContent = '看到人了，主动打招呼！';
+                    robot.style.left = '700px';
+                    setTimeout(() => {
+                        consumeBattery(15);
+                        initiative += 2;
+                        updateInitiative();
+                        taskTip.style.display = 'none';
+                        robot.classList.remove('active-action');
+                    }, 800);
+                }
+                // 无任务时返回初始位置
+                else {
+                    taskTip.textContent = '没任务啦，回原位待命～';
+                    robot.style.left = '50px';
+                    setTimeout(() => {
+                        taskTip.style.display = 'none';
+                        robot.classList.remove('active-action');
+                    }, 800);
+                }
+            }, 4000); // 每4秒自主决策一次
+        }
+
+        // 停止主动行为定时器
+        function stopAutoAction() {
+            if (autoActionTimer) {
+                clearInterval(autoActionTimer);
+                autoActionTimer = null;
+            }
+            taskTip.style.display = 'none';
+            robot.classList.remove('active-action');
+        }
+
+        // 关卡2初始化
+        function level2Init() {
+            level = 2;
+            document.querySelector('.level-tip').textContent = '关卡 2：引导机器人充电';
+            charger.style.display = 'block'; // 显示充电桩
+            trash.style.display = 'block'; // 重新显示垃圾
+            robot.style.left = '50px'; // 机器人回到初始位置
+            showModal('进入关卡2', '现在机器人会消耗电量，电量低时半主动状态下会优先主动充电！');
+        }
+
+        // 关卡3初始化
+        function level3Init() {
+            level = 3;
+            document.querySelector('.level-tip').textContent = '关卡 3：引导机器人打招呼';
+            person.style.display = 'block'; // 显示人物
+            charger.style.display = 'block';
+            trash.style.display = 'block';
+            robot.style.left = '50px';
+            showModal('进入关卡3', '终极目标：让机器人达到100主动性值，自主按优先级完成所有任务！');
+        }
+
+        // 初始化：启动电量缓慢消耗（模拟待机耗电）
+        setInterval(() => {
+            if (battery > 0) {
+                consumeBattery(1); // 每10秒消耗1%电量
+            }
+        }, 10000);
+
+        // 初始更新状态
+        updateInitiative();
+    </script>
+</body>
+</html>
