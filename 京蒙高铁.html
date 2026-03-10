@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京蒙高铁建设者</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #e8f4f8 0%, #f0f8fb 100%);
+            overflow-x: hidden;
+        }
+        
+        /* 游戏容器 */
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+        
+        /* 游戏标题 */
+        .game-title {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 28px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* 游戏状态面板 */
+        .status-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-icon {
+            width: 30px;
+            height: 30px;
+            background: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* 游戏主界面 */
+        .game-map {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        /* 路线和站点 */
+        .route-line {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            right: 50px;
+            height: 6px;
+            background: #e0e0e0;
+            transform: translateY(-50%);
+            border-radius: 3px;
+        }
+        
+        .route-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .station {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 3px solid #bdc3c7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+        
+        .station.active {
+            border-color: #3498db;
+            background: #3498db;
+            color: white;
+        }
+        
+        .station.completed {
+            border-color: #27ae60;
+            background: #27ae60;
+            color: white;
+        }
+        
+        .station-name {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            white-space: nowrap;
+            color: #2c3e50;
+        }
+        
+        /* 高铁列车 */
+        .train {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 30px;
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            border-radius: 15px 8px 8px 15px;
+            transition: left 1s ease;
+            z-index: 3;
+        }
+        
+        .train::after {
+            content: "";
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 15px 0 15px 10px;
+            border-color: transparent transparent transparent #c0392b;
+        }
+        
+        /* 按钮区域 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #3498db;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .btn.success {
+            background: #27ae60;
+        }
+        
+        .btn.success:hover {
+            background: #219653;
+        }
+        
+        /* 挑战弹窗 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        /* 胜利界面 */
+        .victory-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            z-index: 20;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .victory-title {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .victory-desc {
+            font-size: 18px;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="game-title">京蒙高铁建设者</h1>
+        
+        <!-- 状态面板 -->
+        <div class="status-panel">
+            <div class="status-item">
+                <div class="status-icon">💰</div>
+                <div>资金: <span id="money">1000</span>万</div>
+            </div>
+            <div class="status-item">
+                <div class="status-icon">🚄</div>
+                <div>进度: <span id="progress">0</span>%</div>
+            </div>
+            <div class="status-item">
+                <div class="status-icon">🏁</div>
+                <div>当前站点: <span id="current-station">北京</span></div>
+            </div>
+        </div>
+        
+        <!-- 游戏地图 -->
+        <div class="game-map">
+            <div class="route-line">
+                <div class="route-progress" id="route-progress"></div>
+            </div>
+            
+            <!-- 站点 -->
+            <div class="station active" style="left: 50px;" data-name="北京" data-progress="0">
+                <span class="station-name">北京</span>
+                京
+            </div>
+            <div class="station" style="left: 20%;" data-name="张家口" data-progress="20">
+                <span class="station-name">张家口</span>
+                张
+            </div>
+            <div class="station" style="left: 40%;" data-name="边境口岸" data-progress="40">
+                <span class="station-name">边境口岸</span>
+                边
+            </div>
+            <div class="station" style="left: 60%;" data-name="苏赫巴托" data-progress="60">
+                <span class="station-name">苏赫巴托</span>
+                苏
+            </div>
+            <div class="station" style="left: 80%;" data-name="达尔汗" data-progress="80">
+                <span class="station-name">达尔汗</span>
+                达
+            </div>
+            <div class="station" style="right: 50px;" data-name="乌兰巴托" data-progress="100">
+                <span class="station-name">乌兰巴托</span>
+                乌
+            </div>
+            
+            <!-- 高铁列车 -->
+            <div class="train" id="train"></div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="btn-group">
+            <button class="btn" id="build-btn">建设当前站点</button>
+            <button class="btn success" id="next-btn" disabled>前往下一站</button>
+        </div>
+        
+        <!-- 挑战弹窗 -->
+        <div class="modal" id="challenge-modal">
+            <div class="modal-content">
+                <h3 class="modal-title" id="challenge-title">地形挑战</h3>
+                <div class="modal-body" id="challenge-content">
+                    前方路段遇到山地地形，需要额外投入资金修建隧道，是否继续？
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="challenge-confirm">确认 (花费200万)</button>
+                    <button class="btn" id="challenge-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 胜利界面 -->
+        <div class="victory-screen" id="victory-screen">
+            <h2 class="victory-title">🎉 京蒙高铁全线贯通！</h2>
+            <p class="victory-desc">
+                恭喜你成功完成北京到乌兰巴托的高铁建设！
+                这条高铁线路将成为连接中蒙两国的重要纽带，
+                促进两国的经济交流和人员往来。
+            </p>
+            <button class="btn success" id="restart-btn">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏核心数据
+        const gameData = {
+            money: 1000,          // 初始资金（万）
+            progress: 0,          // 建设进度
+            currentStation: 0,    // 当前站点索引
+            stations: [           // 站点数据
+                { name: "北京", progress: 0, built: true },
+                { name: "张家口", progress: 20, built: false },
+                { name: "边境口岸", progress: 40, built: false },
+                { name: "苏赫巴托", progress: 60, built: false },
+                { name: "达尔汗", progress: 80, built: false },
+                { name: "乌兰巴托", progress: 100, built: false }
+            ],
+            challenges: [         // 各站点挑战
+                "张家口段遇到山地地形，需要额外投入资金修建隧道",
+                "边境口岸需要完成海关设施建设，符合两国通关标准",
+                "苏赫巴托段遭遇草原大风天气，需要加固线路防护",
+                "达尔汗段需要建设补给站，保障列车能源供应",
+                "乌兰巴托终点站需要建设大型客运枢纽"
+            ]
+        };
+
+        // DOM元素
+        const elements = {
+            moneyText: document.getElementById('money'),
+            progressText: document.getElementById('progress'),
+            currentStationText: document.getElementById('current-station'),
+            routeProgress: document.getElementById('route-progress'),
+            train: document.getElementById('train'),
+            buildBtn: document.getElementById('build-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            challengeModal: document.getElementById('challenge-modal'),
+            challengeTitle: document.getElementById('challenge-title'),
+            challengeContent: document.getElementById('challenge-content'),
+            challengeConfirm: document.getElementById('challenge-confirm'),
+            challengeCancel: document.getElementById('challenge-cancel'),
+            victoryScreen: document.getElementById('victory-screen'),
+            restartBtn: document.getElementById('restart-btn')
+        };
+
+        // 初始化游戏
+        function initGame() {
+            updateStatus();
+            bindEvents();
+            updateStationStyles();
+        }
+
+        // 更新游戏状态显示
+        function updateStatus() {
+            elements.moneyText.textContent = gameData.money;
+            elements.progressText.textContent = gameData.progress;
+            elements.currentStationText.textContent = gameData.stations[gameData.currentStation].name;
+            elements.routeProgress.style.width = `${gameData.progress}%`;
+            
+            // 更新列车位置
+            const stationElement = document.querySelector(`.station[data-progress="${gameData.progress}"]`);
+            if (stationElement) {
+                const stationLeft = stationElement.offsetLeft;
+                elements.train.style.left = `${stationLeft}px`;
+            }
+        }
+
+        // 更新站点样式
+        function updateStationStyles() {
+            document.querySelectorAll('.station').forEach((station, index) => {
+                if (index < gameData.currentStation) {
+                    station.classList.add('completed');
+                    station.classList.remove('active');
+                } else if (index === gameData.currentStation) {
+                    station.classList.add('active');
+                    station.classList.remove('completed');
+                } else {
+                    station.classList.remove('active', 'completed');
+                }
+            });
+        }
+
+        // 显示挑战弹窗
+        function showChallenge() {
+            const challengeIndex = gameData.currentStation - 1;
+            if (challengeIndex >= 0 && challengeIndex < gameData.challenges.length) {
+                elements.challengeTitle.textContent = `${gameData.stations[gameData.currentStation].name}挑战`;
+                elements.challengeContent.textContent = gameData.challenges[challengeIndex];
+                elements.challengeModal.style.display = 'flex';
+            }
+        }
+
+        // 建设当前站点
+        function buildStation() {
+            // 扣除建设成本
+            const buildCost = 200;
+            if (gameData.money < buildCost) {
+                alert('资金不足，无法建设！');
+                return;
+            }
+            
+            gameData.money -= buildCost;
+            gameData.stations[gameData.currentStation].built = true;
+            
+            // 更新状态
+            updateStatus();
+            
+            // 启用下一站按钮
+            elements.nextBtn.disabled = false;
+            elements.buildBtn.disabled = true;
+        }
+
+        // 前往下一站
+        function goToNextStation() {
+            // 显示挑战（除了第一站）
+            if (gameData.currentStation > 0) {
+                showChallenge();
+                return;
+            }
+            
+            // 直接前往下一站（第一站特殊处理）
+            moveToNextStation();
+        }
+
+        // 确认挑战并前往下一站
+        function confirmChallenge() {
+            // 扣除挑战成本
+            const challengeCost = 200;
+            if (gameData.money < challengeCost) {
+                alert('资金不足，无法完成挑战！');
+                return;
+            }
+            
+            gameData.money -= challengeCost;
+            elements.challengeModal.style.display = 'none';
+            
+            // 前往下一站
+            moveToNextStation();
+        }
+
+        // 移动到下一站
+        function moveToNextStation() {
+            // 检查是否到达最后一站
+            if (gameData.currentStation === gameData.stations.length - 1) {
+                // 显示胜利界面
+                elements.victoryScreen.style.display = 'flex';
+                return;
+            }
+            
+            // 移动到下一站
+            gameData.currentStation++;
+            gameData.progress = gameData.stations[gameData.currentStation].progress;
+            
+            // 更新状态
+            updateStatus();
+            updateStationStyles();
+            
+            // 重置按钮状态
+            elements.nextBtn.disabled = true;
+            elements.buildBtn.disabled = false;
+            
+            // 随机增加资金（运营收入）
+            gameData.money += Math.floor(Math.random() * 100) + 50;
+            updateStatus();
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            // 重置游戏数据
+            gameData.money = 1000;
+            gameData.progress = 0;
+            gameData.currentStation = 0;
+            
+            // 重置站点建设状态
+            gameData.stations.forEach((station, index) => {
+                station.built = index === 0;
+            });
+            
+            // 隐藏胜利界面
+            elements.victoryScreen.style.display = 'none';
+            
+            // 更新状态
+            updateStatus();
+            updateStationStyles();
+            
+            // 重置按钮状态
+            elements.nextBtn.disabled = true;
+            elements.buildBtn.disabled = false;
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 建设按钮
+            elements.buildBtn.addEventListener('click', buildStation);
+            
+            // 下一站按钮
+            elements.nextBtn.addEventListener('click', goToNextStation);
+            
+            // 挑战确认
+            elements.challengeConfirm.addEventListener('click', confirmChallenge);
+            
+            // 挑战取消
+            elements.challengeCancel.addEventListener('click', () => {
+                elements.challengeModal.style.display = 'none';
+            });
+            
+            // 重新开始
+            elements.restartBtn.addEventListener('click', restartGame);
+            
+            // 点击站点切换
+            document.querySelectorAll('.station').forEach((station, index) => {
+                station.addEventListener('click', () => {
+                    // 只能选择已建设的站点
+                    if (index <= gameData.currentStation && gameData.stations[index].built) {
+                        gameData.currentStation = index;
+                        gameData.progress = gameData.stations[index].progress;
+                        updateStatus();
+                        updateStationStyles();
+                    }
+                });
+            });
+        }
+
+        // 启动游戏
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
