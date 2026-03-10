@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>筑梦高铁：北京-首尔线</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#FF7D00',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        warning: '#FF7D00',
+                        info: '#86909C',
+                        light: '#F5F7FA',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        game: ['"Comic Sans MS"', 'Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .game-shadow {
+                box-shadow: 0 8px 30px rgba(22, 93, 255, 0.2);
+            }
+            .btn-hover {
+                transition: all 0.2s ease;
+            }
+            .btn-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .progress-bar {
+                transition: width 0.8s ease-in-out;
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            .animate-slide-up {
+                animation: slideUp 0.6s ease-out;
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-light to-white min-h-screen font-game text-dark overflow-x-hidden">
+    <!-- 游戏状态数据 -->
+    <script>
+        // 游戏全局状态
+        const gameState = {
+            stage: 0, // 0:开始界面, 1:第一阶段, 2:第二阶段, 3:第三阶段, 4:完成
+            resources: {
+                money: 50, // 初始资金（单位：亿美元）
+                political: 30, // 政治资本
+                technology: 40, // 技术水平
+                reputation: 20, // 国际声誉
+            },
+            completedTasks: [], // 已完成的任务
+            stageEvents: [
+                // 第一阶段：外交谈判
+                {
+                    id: 101,
+                    name: "中韩高层会晤",
+                    desc: "与中韩两国领导人会面，争取政策支持",
+                    cost: { money: 5, political: 10 },
+                    reward: { political: 20, reputation: 10 },
+                    type: "political"
+                },
+                {
+                    id: 102,
+                    name: "朝韩对话尝试",
+                    desc: "通过外交渠道，尝试与朝鲜开启对话",
+                    cost: { money: 10, political: 15 },
+                    reward: { political: 30, reputation: 15 },
+                    type: "political"
+                },
+                {
+                    id: 103,
+                    name: "联合国制裁豁免申请",
+                    desc: "向联合国申请高铁项目相关制裁豁免",
+                    cost: { money: 15, political: 20 },
+                    reward: { political: 25, reputation: 20 },
+                    type: "political"
+                },
+                
+                // 第二阶段：技术准备
+                {
+                    id: 201,
+                    name: "朝鲜铁路勘测",
+                    desc: "派遣工程师团队对朝鲜段铁路进行全面勘测",
+                    cost: { money: 20, technology: 15 },
+                    reward: { technology: 25, reputation: 10 },
+                    type: "technology"
+                },
+                {
+                    id: 202,
+                    name: "轨距统一研究",
+                    desc: "研究解决中韩朝轨距差异问题的技术方案",
+                    cost: { money: 15, technology: 20 },
+                    reward: { technology: 30, reputation: 15 },
+                    type: "technology"
+                },
+                {
+                    id: 203,
+                    name: "跨海方案评估",
+                    desc: "评估中韩海底隧道替代方案的技术可行性",
+                    cost: { money: 25, technology: 25 },
+                    reward: { technology: 20, reputation: 20 },
+                    type: "technology"
+                },
+                
+                // 第三阶段：工程建设
+                {
+                    id: 301,
+                    name: "朝鲜段铁路改造",
+                    desc: "启动朝鲜境内500公里铁路现代化改造",
+                    cost: { money: 50, technology: 30, political: 20 },
+                    reward: { money: -10, technology: 15, reputation: 25 },
+                    type: "construction"
+                },
+                {
+                    id: 302,
+                    name: "鸭绿江大桥建设",
+                    desc: "建设连接中朝的鸭绿江高铁大桥",
+                    cost: { money: 40, technology: 25, political: 15 },
+                    reward: { money: -5, technology: 20, reputation: 20 },
+                    type: "construction"
+                },
+                {
+                    id: 303,
+                    name: "高铁全线铺轨",
+                    desc: "完成北京-首尔高铁全线轨道铺设",
+                    cost: { money: 80, technology: 40, political: 30 },
+                    reward: { money: -20, technology: 25, reputation: 30 },
+                    type: "construction"
+                }
+            ]
+        };
+
+        // 初始化游戏
+        function initGame() {
+            updateResourceDisplay();
+            showStage(0);
+        }
+
+        // 显示指定阶段
+        function showStage(stageNum) {
+            gameState.stage = stageNum;
+            
+            // 隐藏所有阶段
+            document.querySelectorAll('.game-stage').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // 显示当前阶段
+            document.getElementById(`stage-${stageNum}`).classList.remove('hidden');
+            
+            // 根据阶段加载内容
+            if (stageNum === 1) loadStage1Events();
+            if (stageNum === 2) loadStage2Events();
+            if (stageNum === 3) loadStage3Events();
+            
+            // 更新进度条
+            updateProgressBar();
+        }
+
+        // 更新资源显示
+        function updateResourceDisplay() {
+            document.getElementById('money-value').textContent = gameState.resources.money;
+            document.getElementById('political-value').textContent = gameState.resources.political;
+            document.getElementById('technology-value').textContent = gameState.resources.technology;
+            document.getElementById('reputation-value').textContent = gameState.resources.reputation;
+        }
+
+        // 更新进度条
+        function updateProgressBar() {
+            const progressPercent = (gameState.stage / 4) * 100;
+            document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+            document.getElementById('progress-text').textContent = 
+                gameState.stage === 0 ? "准备开始" :
+                gameState.stage === 1 ? "外交谈判 (25%)" :
+                gameState.stage === 2 ? "技术准备 (50%)" :
+                gameState.stage === 3 ? "工程建设 (75%)" : "项目完成 (100%)";
+        }
+
+        // 执行任务
+        function executeTask(taskId) {
+            const task = gameState.stageEvents.find(t => t.id === taskId);
+            if (!task) return;
+
+            // 检查是否有足够资源
+            let canExecute = true;
+            for (const [resource, cost] of Object.entries(task.cost)) {
+                if (gameState.resources[resource] < cost) {
+                    canExecute = false;
+                    showMessage(`资源不足！需要${resource}: ${cost}`, 'danger');
+                    break;
+                }
+            }
+
+            if (!canExecute) return;
+
+            // 扣除成本
+            for (const [resource, cost] of Object.entries(task.cost)) {
+                gameState.resources[resource] -= cost;
+            }
+
+            // 增加奖励
+            for (const [resource, reward] of Object.entries(task.reward)) {
+                gameState.resources[resource] += reward;
+            }
+
+            // 标记任务完成
+            if (!gameState.completedTasks.includes(taskId)) {
+                gameState.completedTasks.push(taskId);
+            }
+
+            // 更新显示
+            updateResourceDisplay();
+            showMessage(`任务完成！${task.name} 成功执行`, 'success');
+
+            // 检查阶段是否完成
+            checkStageCompletion();
+            
+            // 更新任务状态
+            updateTaskButtons();
+        }
+
+        // 检查阶段是否完成
+        function checkStageCompletion() {
+            // 第一阶段完成条件
+            if (gameState.stage === 1 && 
+                gameState.completedTasks.filter(id => id >= 101 && id <= 103).length >= 2) {
+                setTimeout(() => {
+                    showMessage("外交阶段完成！进入技术准备阶段", 'success');
+                    setTimeout(() => showStage(2), 2000);
+                }, 1500);
+            }
+            
+            // 第二阶段完成条件
+            if (gameState.stage === 2 && 
+                gameState.completedTasks.filter(id => id >= 201 && id <= 203).length >= 2) {
+                setTimeout(() => {
+                    showMessage("技术阶段完成！进入工程建设阶段", 'success');
+                    setTimeout(() => showStage(3), 2000);
+                }, 1500);
+            }
+            
+            // 第三阶段完成条件
+            if (gameState.stage === 3 && 
+                gameState.completedTasks.filter(id => id >= 301 && id <= 303).length >= 2) {
+                setTimeout(() => {
+                    showMessage("工程建设完成！高铁项目成功！", 'success');
+                    setTimeout(() => showStage(4), 2000);
+                }, 1500);
+            }
+        }
+
+        // 显示消息提示
+        function showMessage(text, type = 'info') {
+            const messageEl = document.getElementById('game-message');
+            messageEl.textContent = text;
+            messageEl.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white z-50 animate-fade-in ${
+                type === 'success' ? 'bg-success' : 
+                type === 'danger' ? 'bg-danger' : 
+                type === 'warning' ? 'bg-warning' : 'bg-primary'
+            }`;
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                messageEl.classList.add('opacity-0');
+                setTimeout(() => {
+                    messageEl.textContent = '';
+                    messageEl.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white z-50 opacity-0';
+                }, 500);
+            }, 3000);
+        }
+
+        // 加载各阶段任务
+        function loadStage1Events() {
+            const container = document.getElementById('stage1-tasks');
+            container.innerHTML = '';
+            
+            gameState.stageEvents.filter(t => t.id >= 101 && t.id <= 103).forEach(task => {
+                const isCompleted = gameState.completedTasks.includes(task.id);
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl p-5 game-shadow mb-4 animate-slide-up ${isCompleted ? 'opacity-70' : ''}">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-lg ${isCompleted ? 'line-through' : ''}">${task.name}</h3>
+                            <span class="px-3 py-1 rounded-full text-xs ${
+                                task.type === 'political' ? 'bg-primary/10 text-primary' :
+                                task.type === 'technology' ? 'bg-secondary/10 text-secondary' : 'bg-success/10 text-success'
+                            }">${task.type === 'political' ? '外交' : task.type === 'technology' ? '技术' : '工程'}</span>
+                        </div>
+                        <p class="text-gray-600 mb-4 text-sm">${task.desc}</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            ${Object.entries(task.cost).map(([res, val]) => `
+                                <span class="flex items-center px-2 py-1 bg-light rounded text-xs">
+                                    <i class="fa ${
+                                        res === 'money' ? 'fa-money' : 
+                                        res === 'political' ? 'fa-balance-scale' : 
+                                        res === 'technology' ? 'fa-cogs' : 'fa-star'
+                                    } mr-1"></i>
+                                    ${res === 'money' ? '资金' : 
+                                      res === 'political' ? '政治' : 
+                                      res === 'technology' ? '技术' : '声誉'}: ${val}
+                                </span>
+                            `).join('')}
+                        </div>
+                        <button onclick="executeTask(${task.id})" 
+                            class="w-full py-2 rounded-lg bg-primary text-white btn-hover ${
+                                isCompleted ? 'bg-gray-400 cursor-not-allowed' : ''
+                            }"
+                            ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? '已完成' : '执行任务'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function loadStage2Events() {
+            const container = document.getElementById('stage2-tasks');
+            container.innerHTML = '';
+            
+            gameState.stageEvents.filter(t => t.id >= 201 && t.id <= 203).forEach(task => {
+                const isCompleted = gameState.completedTasks.includes(task.id);
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl p-5 game-shadow mb-4 animate-slide-up ${isCompleted ? 'opacity-70' : ''}">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-lg ${isCompleted ? 'line-through' : ''}">${task.name}</h3>
+                            <span class="px-3 py-1 rounded-full text-xs ${
+                                task.type === 'political' ? 'bg-primary/10 text-primary' :
+                                task.type === 'technology' ? 'bg-secondary/10 text-secondary' : 'bg-success/10 text-success'
+                            }">${task.type === 'political' ? '外交' : task.type === 'technology' ? '技术' : '工程'}</span>
+                        </div>
+                        <p class="text-gray-600 mb-4 text-sm">${task.desc}</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            ${Object.entries(task.cost).map(([res, val]) => `
+                                <span class="flex items-center px-2 py-1 bg-light rounded text-xs">
+                                    <i class="fa ${
+                                        res === 'money' ? 'fa-money' : 
+                                        res === 'political' ? 'fa-balance-scale' : 
+                                        res === 'technology' ? 'fa-cogs' : 'fa-star'
+                                    } mr-1"></i>
+                                    ${res === 'money' ? '资金' : 
+                                      res === 'political' ? '政治' : 
+                                      res === 'technology' ? '技术' : '声誉'}: ${val}
+                                </span>
+                            `).join('')}
+                        </div>
+                        <button onclick="executeTask(${task.id})" 
+                            class="w-full py-2 rounded-lg bg-secondary text-white btn-hover ${
+                                isCompleted ? 'bg-gray-400 cursor-not-allowed' : ''
+                            }"
+                            ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? '已完成' : '执行任务'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function loadStage3Events() {
+            const container = document.getElementById('stage3-tasks');
+            container.innerHTML = '';
+            
+            gameState.stageEvents.filter(t => t.id >= 301 && t.id <= 303).forEach(task => {
+                const isCompleted = gameState.completedTasks.includes(task.id);
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl p-5 game-shadow mb-4 animate-slide-up ${isCompleted ? 'opacity-70' : ''}">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-lg ${isCompleted ? 'line-through' : ''}">${task.name}</h3>
+                            <span class="px-3 py-1 rounded-full text-xs ${
+                                task.type === 'political' ? 'bg-primary/10 text-primary' :
+                                task.type === 'technology' ? 'bg-secondary/10 text-secondary' : 'bg-success/10 text-success'
+                            }">${task.type === 'political' ? '外交' : task.type === 'technology' ? '技术' : '工程'}</span>
+                        </div>
+                        <p class="text-gray-600 mb-4 text-sm">${task.desc}</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            ${Object.entries(task.cost).map(([res, val]) => `
+                                <span class="flex items-center px-2 py-1 bg-light rounded text-xs">
+                                    <i class="fa ${
+                                        res === 'money' ? 'fa-money' : 
+                                        res === 'political' ? 'fa-balance-scale' : 
+                                        res === 'technology' ? 'fa-cogs' : 'fa-star'
+                                    } mr-1"></i>
+                                    ${res === 'money' ? '资金' : 
+                                      res === 'political' ? '政治' : 
+                                      res === 'technology' ? '技术' : '声誉'}: ${val}
+                                </span>
+                            `).join('')}
+                        </div>
+                        <button onclick="executeTask(${task.id})" 
+                            class="w-full py-2 rounded-lg bg-success text-white btn-hover ${
+                                isCompleted ? 'bg-gray-400 cursor-not-allowed' : ''
+                            }"
+                            ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? '已完成' : '执行任务'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // 更新任务按钮状态
+        function updateTaskButtons() {
+            if (gameState.stage === 1) loadStage1Events();
+            if (gameState.stage === 2) loadStage2Events();
+            if (gameState.stage === 3) loadStage3Events();
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            gameState.stage = 0;
+            gameState.resources = {
+                money: 50,
+                political: 30,
+                technology: 40,
+                reputation: 20,
+            };
+            gameState.completedTasks = [];
+            initGame();
+            showMessage("游戏已重置，重新开始你的高铁梦想！", 'info');
+        }
+
+        // 页面加载完成后初始化
+        window.onload = initGame;
+    </script>
+
+    <!-- 游戏主界面 -->
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 游戏标题 -->
+        <div class="text-center mb-8 animate-fade-in">
+            <h1 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-primary mb-2">筑梦高铁：北京-首尔线</h1>
+            <p class="text-gray-600">扮演高铁项目总工程师，实现跨国高铁的伟大梦想！</p>
+        </div>
+
+        <!-- 游戏进度条 -->
+        <div class="bg-light rounded-full h-6 mb-8 overflow-hidden game-shadow">
+            <div id="progress-fill" class="progress-bar bg-gradient-to-r from-primary to-secondary h-full w-0 rounded-full"></div>
+            <div id="progress-text" class="absolute text-center w-full -mt-6 text-sm font-medium text-dark">准备开始</div>
+        </div>
+
+        <!-- 资源面板 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-slide-up">
+            <div class="bg-white rounded-xl p-4 game-shadow text-center">
+                <i class="fa fa-money text-primary text-2xl mb-2"></i>
+                <h3 class="text-xs text-gray-500 mb-1">资金 (亿美元)</h3>
+                <p id="money-value" class="font-bold text-xl">50</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 game-shadow text-center">
+                <i class="fa fa-balance-scale text-warning text-2xl mb-2"></i>
+                <h3 class="text-xs text-gray-500 mb-1">政治资本</h3>
+                <p id="political-value" class="font-bold text-xl">30</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 game-shadow text-center">
+                <i class="fa fa-cogs text-secondary text-2xl mb-2"></i>
+                <h3 class="text-xs text-gray-500 mb-1">技术水平</h3>
+                <p id="technology-value" class="font-bold text-xl">40</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 game-shadow text-center">
+                <i class="fa fa-star text-success text-2xl mb-2"></i>
+                <h3 class="text-xs text-gray-500 mb-1">国际声誉</h3>
+                <p id="reputation-value" class="font-bold text-xl">20</p>
+            </div>
+        </div>
+
+        <!-- 消息提示框 -->
+        <div id="game-message" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white z-50 opacity-0"></div>
+
+        <!-- 游戏阶段0：开始界面 -->
+        <div id="stage-0" class="game-stage animate-fade-in">
+            <div class="bg-white rounded-2xl p-8 game-shadow text-center">
+                <div class="mb-6">
+                    <img src="https://picsum.photos/id/1031/800/400" alt="高铁梦想" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h2 class="text-2xl font-bold mb-4">北京-首尔高铁项目</h2>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        你将担任北京-首尔高铁项目的总工程师，需要克服政治、技术、资金等多重挑战，
+                        最终建成这条全长1200公里、连接东北亚的超级高铁。准备好了吗？让我们开始这段筑梦之旅！
+                    </p>
+                </div>
+                <button onclick="showStage(1)" class="px-8 py-3 bg-primary text-white rounded-lg font-bold btn-hover text-lg">
+                    开始游戏 <i class="fa fa-play ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 游戏阶段1：外交谈判 -->
+        <div id="stage-1" class="game-stage hidden">
+            <div class="bg-white rounded-2xl p-6 game-shadow mb-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
+                        <i class="fa fa-handshake-o text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">第一阶段：外交谈判</h2>
+                        <p class="text-gray-600 text-sm">争取各国支持，解决政治障碍</p>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-6">
+                    首先需要进行外交斡旋，与中韩朝三国进行高层对话，争取联合国制裁豁免，为项目奠定政治基础。
+                    完成至少2个外交任务即可进入下一阶段。
+                </p>
+            </div>
+            <div id="stage1-tasks" class="space-y-4">
+                <!-- 任务内容将通过JS动态加载 -->
+            </div>
+        </div>
+
+        <!-- 游戏阶段2：技术准备 -->
+        <div id="stage-2" class="game-stage hidden">
+            <div class="bg-white rounded-2xl p-6 game-shadow mb-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mr-4">
+                        <i class="fa fa-cogs text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">第二阶段：技术准备</h2>
+                        <p class="text-gray-600 text-sm">解决技术难题，制定工程方案</p>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-6">
+                    现在需要进行技术勘测和方案设计，解决轨距差异、铁路电气化、跨海方案等技术难题。
+                    完成至少2个技术任务即可进入下一阶段。
+                </p>
+            </div>
+            <div id="stage2-tasks" class="space-y-4">
+                <!-- 任务内容将通过JS动态加载 -->
+            </div>
+        </div>
+
+        <!-- 游戏阶段3：工程建设 -->
+        <div id="stage-3" class="game-stage hidden">
+            <div class="bg-white rounded-2xl p-6 game-shadow mb-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success mr-4">
+                        <i class="fa fa-building text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold">第三阶段：工程建设</h2>
+                        <p class="text-gray-600 text-sm">启动高铁建设，实现最终梦想</p>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-6">
+                    现在进入最后的工程建设阶段，需要投入大量资源进行铁路改造和建设。
+                    完成至少2个建设任务即可完成整个项目！
+                </p>
+            </div>
+            <div id="stage3-tasks" class="space-y-4">
+                <!-- 任务内容将通过JS动态加载 -->
+            </div>
+        </div>
+
+        <!-- 游戏阶段4：完成界面 -->
+        <div id="stage-4" class="game-stage hidden">
+            <div class="bg-white rounded-2xl p-8 game-shadow text-center animate-slide-up">
+                <div class="mb-6 animate-pulse-slow">
+                    <i class="fa fa-train text-primary text-6xl mb-4"></i>
+                    <h2 class="text-3xl font-bold text-primary mb-2">恭喜！</h2>
+                    <h3 class="text-xl font-semibold mb-4">北京-首尔高铁项目圆满完成！</h3>
+                </div>
+                <div class="bg-light rounded-xl p-6 mb-8 text-left">
+                    <h4 class="font-bold mb-3">项目成果：</h4>
+                    <ul class="space-y-2 text-gray-700">
+                        <li><i class="fa fa-check text-success mr-2"></i> 建成全长1200公里的跨国高铁</li>
+                        <li><i class="fa fa-check text-success mr-2"></i> 实现首尔至北京3-4小时直达</li>
+                        <li><i class="fa fa-check text-success mr-2"></i> 促进东北亚经济圈发展</li>
+                        <li><i class="fa fa-check text-success mr-2"></i> 提升区域互联互通水平</li>
+                    </ul>
+                </div>
+                <p class="text-gray-600 mb-8">
+                    你成功克服了政治、技术、资金等多重挑战，实现了这个伟大的跨国基建梦想！
+                </p>
+                <button onclick="restartGame()" class="px-8 py-3 bg-primary text-white rounded-lg font-bold btn-hover">
+                    重新挑战 <i class="fa fa-refresh ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 游戏控制区 -->
+        <div class="mt-8 text-center">
+            <button onclick="restartGame()" class="px-6 py-2 bg-light text-gray-700 rounded-lg btn-hover text-sm">
+                <i class="fa fa-refresh mr-1"></i> 重新开始
+            </button>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="mt-12 py-6 text-center text-gray-500 text-sm">
+        <p>筑梦高铁：北京-首尔线 &copy; 2026 | 本游戏仅为创意展示，基于真实高铁构想设计</p>
+    </footer>
+</body>
+</html>
