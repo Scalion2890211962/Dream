@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>钢铁丝绸之路：中非铁路传奇</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --china-red: #DE2910;
+            --africa-green: #009739;
+            --africa-yellow: #FFDF00;
+            --desert-gold: #D4A574;
+            --savanna: #8B9A46;
+            --night: #0a0a0f;
+            --dusk: #1a1a2e;
+            --sand: #C2B280;
+            --ocean: #1E3A5F;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--night);
+            color: #f0f0f0;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #uiLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .pointer-auto {
+            pointer-events: auto;
+        }
+
+        /* Start Screen */
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--china-red) 0%, var(--night) 50%, var(--africa-green) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: auto;
+            overflow-y: auto;
+        }
+
+        .game-logo {
+            font-size: clamp(2rem, 6vw, 4rem);
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            letter-spacing: 2px;
+        }
+
+        .game-logo span {
+            display: block;
+            background: linear-gradient(90deg, var(--china-red), #fff, var(--africa-yellow), var(--africa-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
+
+        .route-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            padding: 0 20px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .route-card {
+            background: rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .route-card:hover, .route-card.selected {
+            border-color: var(--africa-yellow);
+            background: rgba(255,223,0,0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255,223,0,0.2);
+        }
+
+        .route-card.selected {
+            border-width: 3px;
+        }
+
+        .route-flag {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .route-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--africa-yellow);
+            margin-bottom: 10px;
+        }
+
+        .route-stats {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.5;
+        }
+
+        .start-btn {
+            background: linear-gradient(90deg, var(--china-red), #ff6b6b);
+            color: white;
+            border: none;
+            padding: 18px 60px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(222,41,16,0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(222,41,16,0.6);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* HUD */
+        #topHud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            pointer-events: auto;
+        }
+
+        .hud-card {
+            background: rgba(0,0,0,0.7);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 120px;
+            backdrop-filter: blur(5px);
+        }
+
+        .hud-icon {
+            font-size: 1.8rem;
+        }
+
+        .hud-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hud-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .hud-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--africa-yellow);
+        }
+
+        .hud-bar {
+            width: 60px;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .hud-fill {
+            height: 100%;
+            background: var(--africa-green);
+            transition: width 0.3s;
+        }
+
+        .hud-fill.warning {
+            background: var(--china-red);
+        }
+
+        /* Game Map */
+        #mapContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 800px;
+            height: 50vh;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #worldMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Bottom Controls */
+        #controlPanel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 95%;
+            pointer-events: auto;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, rgba(255,223,0,0.2), rgba(255,223,0,0.05));
+            border: 2px solid var(--africa-yellow);
+            color: var(--africa-yellow);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 85px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-btn:hover::before {
+            left: 100%;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            background: var(--africa-yellow);
+            color: var(--night);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255,223,0,0.3);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.4;
+            border-color: #666;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .action-btn .btn-icon {
+            font-size: 1.6rem;
+        }
+
+        .action-btn .btn-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .action-btn .btn-cost {
+            font-size: 0.65rem;
+            opacity: 0.8;
+        }
+
+        /* Event Modal */
+        #eventModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            pointer-events: auto;
+            padding: 20px;
+        }
+
+        #eventModal.active {
+            display: flex;
+        }
+
+        .event-container {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f0f);
+            border: 3px solid;
+            border-image: linear-gradient(90deg, var(--china-red), var(--africa-yellow), var(--africa-green)) 1;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .event-image {
+            font-size: 4rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .event-title {
+            font-size: 1.4rem;
+            color: var(--africa-yellow);
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .event-desc {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .event-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .choice-btn {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        .choice-btn:hover {
+            background: rgba(255,223,0,0.2);
+            border-color: var(--africa-yellow);
+            transform: translateX(5px);
+        }
+
+        .choice-effect {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 5px;
+        }
+
+        /* Tech Tree */
+        #techPanel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 90%;
+            max-width: 600px;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid var(--africa-yellow);
+            border-radius: 20px;
+            padding: 25px;
+            display: none;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: auto;
+            z-index: 40;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #techPanel.active {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .tech-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .tech-title {
+            font-size: 1.3rem;
+            color: var(--africa-yellow);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .tech-item {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tech-item:hover:not(.locked) {
+            border-color: var(--africa-yellow);
+            background: rgba(255,223,0,0.1);
+        }
+
+        .tech-item.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tech-item.researched {
+            border-color: var(--africa-green);
+            background: rgba(0,151,57,0.2);
+        }
+
+        .tech-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .tech-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .tech-cost {
+            font-size: 0.75rem;
+            color: var(--africa-yellow);
+        }
+
+        /* Diplomacy Panel */
+        #diplomacyPanel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid var(--china-red);
+            border-radius: 20px;
+            padding: 25px;
+            display: none;
+            pointer-events: auto;
+            z-index: 40;
+        }
+
+        #diplomacyPanel.active {
+            display: block;
+        }
+
+        .country-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .country-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .country-flag {
+            font-size: 2.5rem;
+        }
+
+        .country-info {
+            flex: 1;
+        }
+
+        .country-name {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .relation-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .relation-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--china-red), var(--africa-yellow));
+            transition: width 0.3s;
+        }
+
+        /* Notifications */
+        #notificationArea {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 30;
+            max-width: 300px;
+        }
+
+        .notification {
+            background: rgba(0,0,0,0.9);
+            border-left: 4px solid var(--africa-yellow);
+            padding: 15px;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .notification.warning {
+            border-left-color: var(--china-red);
+        }
+
+        .notification.success {
+            border-left-color: var(--africa-green);
+        }
+
+        /* Game Over */
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            pointer-events: auto;
+            padding: 20px;
+        }
+
+        #gameOverScreen.active {
+            display: flex;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, rgba(255,223,0,0.1), rgba(0,151,57,0.1));
+            border: 3px solid var(--africa-yellow);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .result-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, var(--china-red), var(--africa-yellow), var(--africa-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--africa-yellow);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 5px;
+        }
+
+        .restart-btn {
+            background: var(--africa-green);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .restart-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,151,57,0.4);
+        }
+
+        /* Time Control */
+        #timeControl {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .time-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .time-btn:hover {
+            border-color: var(--africa-yellow);
+            background: rgba(255,223,0,0.2);
+        }
+
+        .time-btn.active {
+            background: var(--africa-yellow);
+            color: var(--night);
+            border-color: var(--africa-yellow);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .route-selector {
+                grid-template-columns: 1fr;
+            }
+            
+            #controlPanel {
+                bottom: 10px;
+                gap: 8px;
+            }
+            
+            .action-btn {
+                min-width: 70px;
+                padding: 10px 15px;
+            }
+            
+            .hud-card {
+                min-width: 100px;
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Layer -->
+    <div id="uiLayer">
+        <!-- HUD -->
+        <div id="topHud">
+            <div class="hud-card">
+                <span class="hud-icon">💰</span>
+                <div class="hud-content">
+                    <span class="hud-label">资金 (亿美元)</span>
+                    <span class="hud-value" id="moneyDisplay">500</span>
+                    <div class="hud-bar">
+                        <div class="hud-fill" id="moneyBar" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-card">
+                <span class="hud-icon">👷</span>
+                <div class="hud-content">
+                    <span class="hud-label">工程队</span>
+                    <span class="hud-value" id="workerDisplay">3,000</span>
+                    <div class="hud-bar">
+                        <div class="hud-fill" id="workerBar" style="width: 60%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-card">
+                <span class="hud-icon">⚙️</span>
+                <div class="hud-content">
+                    <span class="hud-label">物资</span>
+                    <span class="hud-value" id="supplyDisplay">85%</span>
+                    <div class="hud-bar">
+                        <div class="hud-fill" id="supplyBar" style="width: 85%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-card">
+                <span class="hud-icon">🤝</span>
+                <div class="hud-content">
+                    <span class="hud-label">外交关系</span>
+                    <span class="hud-value" id="diploDisplay">75%</span>
+                    <div class="hud-bar">
+                        <div class="hud-fill" id="diploBar" style="width: 75%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-card">
+                <span class="hud-icon">📅</span>
+                <div class="hud-content">
+                    <span class="hud-label">时间</span>
+                    <span class="hud-value" id="timeDisplay">2025.01</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div id="mapContainer" style="display: none;">
+            <canvas id="worldMap"></canvas>
+        </div>
+
+        <!-- Time Control -->
+        <div id="timeControl" style="display: none;">
+            <button class="time-btn" id="pauseBtn" onclick="game.togglePause()">⏸</button>
+            <button class="time-btn active" id="playBtn" onclick="game.setSpeed(1)">▶</button>
+            <button class="time-btn" id="fastBtn" onclick="game.setSpeed(3)">⏩</button>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div id="controlPanel" style="display: none;">
+            <button class="action-btn" onclick="game.build('standard')">
+                <span class="btn-icon">🛤️</span>
+                <span class="btn-text">标准轨道</span>
+                <span class="btn-cost">-$2M/km</span>
+            </button>
+            
+            <button class="action-btn" onclick="game.build('electrified')">
+                <span class="btn-icon">⚡</span>
+                <span class="btn-text">电气化</span>
+                <span class="btn-cost">-$5M/km</span>
+            </button>
+            
+            <button class="action-btn" onclick="game.build('bridge')">
+                <span class="btn-icon">🌉</span>
+                <span class="btn-text">特大桥梁</span>
+                <span class="btn-cost">-$50M</span>
+            </button>
+            
+            <button class="action-btn" onclick="game.build('tunnel')">
+                <span class="btn-icon">⛰️</span>
+                <span class="btn-text">长隧道</span>
+                <span class="btn-cost">-$80M</span>
+            </button>
+            
+            <button class="action-btn" onclick="game.hireWorkers()">
+                <span class="btn-icon">👷</span>
+                <span class="btn-text">招募工人</span>
+                <span class="btn-cost">-$10M</span>
+            </button>
+            
+            <button class="action-btn" onclick="game.openTech()">
+                <span class="btn-icon">🔬</span>
+                <span class="btn-text">技术研发</span>
+                <span class="btn-cost">查看</span>
+            </button>
+            
+            <button class="action-btn" onclick="game.openDiplomacy()">
+                <span class="btn-icon">🌍</span>
+                <span class="btn-text">外交</span>
+                <span class="btn-cost">查看</span>
+            </button>
+        </div>
+
+        <!-- Notification Area -->
+        <div id="notificationArea"></div>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal">
+        <div class="event-container">
+            <div class="event-image" id="eventIcon">🦁</div>
+            <h2 class="event-title" id="eventTitle">野生动物迁徙</h2>
+            <p class="event-desc" id="eventDesc">施工队遇到了大规模的角马迁徙，需要暂停施工或改道...</p>
+            <div class="event-choices" id="eventChoices">
+                <!-- Dynamic choices -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Tech Panel -->
+    <div id="techPanel">
+        <div class="tech-header">
+            <h3 class="tech-title">🔬 技术研发中心</h3>
+            <button class="close-btn" onclick="game.closeTech()">✕</button>
+        </div>
+        <div class="tech-grid" id="techGrid">
+            <!-- Dynamic tech items -->
+        </div>
+    </div>
+
+    <!-- Diplomacy Panel -->
+    <div id="diplomacyPanel">
+        <div class="tech-header">
+            <h3 class="tech-title">🌍 外交关系</h3>
+            <button class="close-btn" onclick="game.closeDiplomacy()">✕</button>
+        </div>
+        <div class="country-list" id="countryList">
+            <!-- Dynamic country items -->
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <div class="game-logo">
+            <span>钢铁丝绸之路</span>
+            <span style="font-size: 0.5em; margin-top: 10px;">中非铁路传奇</span>
+        </div>
+        
+        <p class="subtitle">
+            选择你的路线，连接中国与非洲。穿越沙漠、草原与雨林，应对地缘政治挑战，
+            在资金、外交与工程的平衡中，打造21世纪的钢铁丝绸之路。
+        </p>
+
+        <div class="route-selector">
+            <div class="route-card" onclick="game.selectRoute('east')" data-route="east">
+                <div class="route-flag">🇹🇿🇰🇪</div>
+                <div class="route-name">东非草原线 (蒙内铁路)</div>
+                <div class="route-stats">
+                    距离: 480km | 难度: ⭐⭐<br>
+                    地形:  Savannah草原 + 裂谷带<br>
+                    特色: 野生动物保护、马赛人社区
+                </div>
+            </div>
+
+            <div class="route-card" onclick="game.selectRoute('west')" data-route="west">
+                <div class="route-flag">🇳🇬🇧🇯</div>
+                <div class="route-name">西非雨林线 (尼日利亚)</div>
+                <div class="route-stats">
+                    距离: 650km | 难度: ⭐⭐⭐⭐<br>
+                    地形:  热带雨林 + 尼日尔河三角洲<br>
+                    特色: 雨季施工、部落协调
+                </div>
+            </div>
+
+            <div class="route-card" onclick="game.selectRoute('central')" data-route="central">
+                <div class="route-flag">🇦🇴🇿🇲</div>
+                <div class="route-name">中南部矿脉线 (本格拉)</div>
+                <div class="route-stats">
+                    距离: 1,300km | 难度: ⭐⭐⭐<br>
+                    地形:  高原 + 铜矿带<br>
+                    特色: 资源运输、殖民遗产铁路改造
+                </div>
+            </div>
+
+            <div class="route-card" onclick="game.selectRoute('north')" data-route="north">
+                <div class="route-flag">🇪🇬🇪🇹</div>
+                <div class="route-name">北非走廊线 (红海-尼罗河)</div>
+                <div class="route-stats">
+                    距离: 2,000km | 难度: ⭐⭐⭐⭐⭐<br>
+                    地形:  撒哈拉沙漠 + 尼罗河谷<br>
+                    特色: 极端气候、古文明遗址保护
+                </div>
+            </div>
+        </div>
+
+        <button class="start-btn" id="startGameBtn" onclick="game.start()" disabled>
+            选择路线开始建设
+        </button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen">
+        <div class="result-card">
+            <h2 class="result-title" id="endTitle">🎉 铁路贯通！</h2>
+            <div class="result-stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="endTime">36月</div>
+                    <div class="stat-label">建设周期</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="endCost">$380M</div>
+                    <div class="stat-label">总成本</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="endDiplo">92%</div>
+                    <div class="stat-label">外交评分</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="endTech">15项</div>
+                    <div class="stat-label">技术突破</div>
+                </div>
+            </div>
+            <p id="endDesc" style="margin-bottom: 20px; line-height: 1.6;">
+                你成功建成了连接内罗毕与蒙巴萨的现代化铁路，为东非经济发展注入了强劲动力。
+            </p>
+            <button class="restart-btn" onclick="location.reload()">再次挑战</button>
+        </div>
+    </div>
+
+    <script>
+        class ChinaAfricaRailway {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.mapCanvas = document.getElementById('worldMap');
+                this.mapCtx = this.mapCanvas.getContext('2d');
+                
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                this.selectedRoute = null;
+                this.gameState = 'start'; // start, playing, paused, event, ended
+                
+                // Game data
+                this.resources = {
+                    money: 500, // 亿美元
+                    workers: 3000,
+                    supplies: 100,
+                    diplomacy: 75
+                };
+                
+                this.time = {
+                    year: 2025,
+                    month: 1,
+                    day: 1,
+                    speed: 1,
+                    paused: false
+                };
+                
+                this.progress = {
+                    built: 0, // km
+                    total: 0,
+                    currentTerrain: 'savanna',
+                    quality: 100
+                };
+                
+                this.technologies = [];
+                this.diplomaticRelations = {};
+                
+                this.events = this.initEvents();
+                this.activeEvent = null;
+                
+                this.particles = [];
+                this.trainPos = { x: 0, y: 0 };
+                
+                this.loop = this.loop.bind(this);
+                this.lastTime = 0;
+            }
+            
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                if (this.mapCanvas) {
+                    const container = document.getElementById('mapContainer');
+                    this.mapCanvas.width = container.clientWidth;
+                    this.mapCanvas.height = container.clientHeight;
+                }
+            }
+            
+            selectRoute(route) {
+                this.selectedRoute = route;
+                document.querySelectorAll('.route-card').forEach(c => c.classList.remove('selected'));
+                document.querySelector(`[data-route="${route}"]`).classList.add('selected');
+                document.getElementById('startGameBtn').disabled = false;
+                
+                const routeData = {
+                    east: { total: 480, name: '蒙内铁路', terrain: 'savanna' },
+                    west: { total: 650, name: '阿卡铁路', terrain: 'jungle' },
+                    central: { total: 1300, name: '本格拉铁路', terrain: 'plateau' },
+                    north: { total: 2000, name: '尼罗河走廊', terrain: 'desert' }
+                };
+                
+                this.progress.total = routeData[route].total;
+                this.progress.currentTerrain = routeData[route].terrain;
+            }
+            
+            start() {
+                if (!this.selectedRoute) return;
+                
+                document.getElementById('startScreen').style.display = 'none';
+                document.getElementById('mapContainer').style.display = 'block';
+                document.getElementById('controlPanel').style.display = 'flex';
+                document.getElementById('timeControl').style.display = 'flex';
+                
+                this.gameState = 'playing';
+                this.initDiplomacy();
+                this.initTechTree();
+                
+                // Start game loop
+                this.lastTime = performance.now();
+                requestAnimationFrame(this.loop);
+                
+                // Start time ticker
+                this.timeInterval = setInterval(() => this.tick(), 1000);
+                
+                this.notify('项目启动！中国工程队抵达施工现场', 'success');
+            }
+            
+            initDiplomacy() {
+                const countries = {
+                    east: [
+                        { name: '肯尼亚', flag: '🇰🇪', relation: 85, issues: ['环保', '就业'] },
+                        { name: '中国', flag: '🇨🇳', relation: 100, issues: ['投资', '技术'] },
+                        { name: '世界银行', flag: '🏦', relation: 60, issues: ['贷款', '标准'] }
+                    ],
+                    west: [
+                        { name: '尼日利亚', flag: '🇳🇬', relation: 70, issues: ['腐败', '安全'] },
+                        { name: '中国', flag: '🇨🇳', relation: 100, issues: ['投资', '技术'] },
+                        { name: '欧盟', flag: '🇪🇺', relation: 50, issues: ['竞争', '标准'] }
+                    ],
+                    central: [
+                        { name: '安哥拉', flag: '🇦🇴', relation: 90, issues: ['石油', '债务'] },
+                        { name: '赞比亚', flag: '🇿🇲', relation: 75, issues: ['铜矿', '过境'] },
+                        { name: '中国', flag: '🇨🇳', relation: 100, issues: ['投资', '技术'] }
+                    ],
+                    north: [
+                        { name: '埃及', flag: '🇪🇬', relation: 80, issues: ['苏伊士', '历史'] },
+                        { name: '埃塞俄比亚', flag: '🇪🇹', relation: 70, issues: ['青尼罗河', '复兴大坝'] },
+                        { name: '中国', flag: '🇨🇳', relation: 100, issues: ['投资', '技术'] }
+                    ]
+                };
+                
+                this.diplomaticRelations = countries[this.selectedRoute];
+            }
+            
+            initTechTree() {
+                this.techTree = [
+                    { id: 'highspeed', name: '高速铁路技术', icon: '🚄', cost: 50, desc: '速度提升50%', researched: false },
+                    { id: 'desert', name: '沙漠施工技术', icon: '🏜️', cost: 30, desc: '沙漠段成本-30%', researched: false },
+                    { id: 'wildlife', name: '野生动物通道', icon: '🦁', cost: 20, desc: '环保评分+20', researched: false },
+                    { id: 'local', name: '本地化培训', icon: '👨‍🏫', cost: 25, desc: '工人效率+40%', researched: false },
+                    { id: 'solar', name: '太阳能供电', icon: '☀️', cost: 35, desc: '运营成本-20%', researched: false },
+                    { id: 'digital', name: '数字铁路系统', icon: '💻', cost: 40, desc: '维护成本-25%', researched: false }
+                ];
+            }
+            
+            initEvents() {
+                return [
+                    {
+                        id: 'migration',
+                        title: '野生动物大迁徙',
+                        icon: '🦓',
+                        desc: '数百万角马和斑马正在穿越施工区域，这是东非最壮观的自然奇观。',
+                        choices: [
+                            { text: '暂停施工2个月，保护迁徙', effects: { delay: 2, diplomacy: 10, env: 15 } },
+                            { text: '建设高架通道（+$20M）', effects: { cost: 20, diplomacy: 5, env: 20, tech: 'wildlife' } },
+                            { text: '强行驱赶（风险极高）', effects: { diplomacy: -30, env: -40, risk: 'protest' } }
+                        ],
+                        terrain: ['savanna']
+                    },
+                    {
+                        id: 'rain',
+                        title: '极端雨季',
+                        icon: '🌧️',
+                        desc: '连续暴雨导致河水泛滥，路基被冲毁，施工设备受损。',
+                        choices: [
+                            { text: '等待旱季（4个月）', effects: { delay: 4, supplies: -20 } },
+                            { text: '紧急加固（+$30M）', effects: { cost: 30, supplies: -10, progress: 10 } },
+                            { text: '改线绕行（+$15M，+2月）', effects: { cost: 15, delay: 2, diplomacy: -5 } }
+                        ],
+                        terrain: ['jungle', 'savanna']
+                    },
+                    {
+                        id: 'corruption',
+                        title: '当地官员索贿',
+                        icon: '💼',
+                        desc: '项目审批遇到阻碍，对方暗示需要" facilitation payment "才能放行。',
+                        choices: [
+                            { text: '坚决拒绝，上报反腐', effects: { diplomacy: -15, delay: 3, integrity: 20 } },
+                            { text: '通过第三方合规处理', effects: { cost: 5, diplomacy: 5, delay: 1 } },
+                            { text: '满足要求（+$8M）', effects: { cost: 8, diplomacy: 10, risk: 'scandal' } }
+                        ],
+                        terrain: ['all']
+                    },
+                    {
+                        id: 'discovery',
+                        title: '考古遗址发现',
+                        icon: '🏛️',
+                        desc: '施工挖掘中发现疑似古代文明遗址，当地文化部要求停工评估。',
+                        choices: [
+                            { text: '全面考古发掘（6个月）', effects: { delay: 6, diplomacy: 20, env: 10 } },
+                            { text: '改道保护（+$25M）', effects: { cost: 25, diplomacy: 10, progress: -20 } },
+                            { text: '夜间秘密施工', effects: { risk: 'disaster', diplomacy: -50 } }
+                        ],
+                        terrain: ['desert', 'plateau']
+                    },
+                    {
+                        id: 'coup',
+                        title: '当地政局变动',
+                        icon: '⚠️',
+                        desc: '反对派质疑项目"债务陷阱"性质，新政府威胁重新谈判合同。',
+                        choices: [
+                            { text: '启动外交斡旋', effects: { cost: 10, diplomacy: 15, delay: 2 } },
+                            { text: '增加本地就业承诺', effects: { workers: 2000, cost: 15, diplomacy: 20 } },
+                            { text: '威胁撤资', effects: { diplomacy: -25, risk: 'cancel' } }
+                        ],
+                        terrain: ['all']
+                    },
+                    {
+                        id: 'tech',
+                        title: '技术突破机会',
+                        icon: '🔬',
+                        desc: '中国工程师提出创新方案，可大幅降低成本但需额外研发投资。',
+                        choices: [
+                            { text: '投资研发（-$20M）', effects: { cost: 20, efficiency: 1.3, tech: 'breakthrough' } },
+                            { text: '采用稳妥方案', effects: { diplomacy: 5 } },
+                            { text: '寻求国际合作', effects: { cost: 10, diplomacy: 10, efficiency: 1.1 } }
+                        ],
+                        terrain: ['all']
+                    },
+                    {
+                        id: 'bandit',
+                        title: '武装袭击',
+                        icon: '🔫',
+                        desc: '施工营地遭遇武装分子袭击，设备被抢，工人受伤。',
+                        choices: [
+                            { text: '雇佣当地安保（+$12M/年）', effects: { cost: 12, security: true, diplomacy: -5 } },
+                            { text: '请求政府保护', effects: { diplomacy: 10, delay: 1 } },
+                            { text: '撤离人员，暂停施工', effects: { delay: 6, supplies: -30 } }
+                        ],
+                        terrain: ['savanna', 'jungle']
+                    }
+                ];
+            }
+            
+            tick() {
+                if (this.gameState !== 'playing' || this.time.paused) return;
+                
+                // Advance time
+                this.time.day += this.time.speed;
+                if (this.time.day > 30) {
+                    this.time.day = 1;
+                    this.time.month++;
+                    this.monthlyUpdate();
+                }
+                if (this.time.month > 12) {
+                    this.time.month = 1;
+                    this.time.year++;
+                }
+                
+                this.updateTimeDisplay();
+                
+                // Random events (5% per day)
+                if (Math.random() < 0.05 * this.time.speed && !this.activeEvent) {
+                    this.triggerEvent();
+                }
+                
+                // Auto construction
+                if (this.resources.workers > 0 && this.resources.supplies > 0) {
+                    const baseRate = 0.5; // km per day
+                    const workerFactor = Math.min(this.resources.workers / 3000, 2);
+                    const supplyFactor = this.resources.supplies / 100;
+                    
+                    const construction = baseRate * workerFactor * supplyFactor * this.time.speed;
+                    this.build(construction, true);
+                }
+                
+                // Consume supplies
+                this.resources.supplies = Math.max(0, this.resources.supplies - 0.1 * this.time.speed);
+            }
+            
+            monthlyUpdate() {
+                // Monthly income from China
+                this.resources.money += 20;
+                
+                // Worker costs
+                const workerCost = Math.floor(this.resources.workers / 1000) * 2;
+                this.resources.money -= workerCost;
+                
+                // Supply shipment from China (every 3 months)
+                if (this.time.month % 3 === 0) {
+                    this.resources.supplies = Math.min(100, this.resources.supplies + 50);
+                    this.notify('新一批建材从中国运抵', 'success');
+                }
+                
+                // Diplomacy decay
+                this.resources.diplomacy = Math.max(0, this.resources.diplomacy - 2);
+                
+                this.updateUI();
+                
+                // Check game over
+                if (this.resources.money < -50) {
+                    this.gameOver('资金枯竭，项目被迫中止');
+                } else if (this.resources.diplomacy <= 0) {
+                    this.gameOver('外交关系破裂，项目被驱逐');
+                } else if (this.progress.built >= this.progress.total) {
+                    this.victory();
+                }
+            }
+            
+            build(amount, auto = false) {
+                const terrain = this.getCurrentTerrain();
+                let cost = terrain.cost * amount;
+                let actualAmount = amount * terrain.speed;
+                
+                // Apply tech bonuses
+                if (this.hasTech('desert') && terrain.type === 'desert') cost *= 0.7;
+                if (this.hasTech('local')) actualAmount *= 1.4;
+                
+                if (auto) {
+                    if (this.resources.money >= cost) {
+                        this.resources.money -= cost;
+                        this.progress.built += actualAmount;
+                        this.addParticles('construction');
+                    }
+                } else {
+                    // Manual build
+                    if (this.resources.money >= cost) {
+                        this.resources.money -= cost;
+                        this.progress.built += actualAmount * 2; // Manual is faster
+                        this.addParticles('spark');
+                        this.notify(`建设推进 ${actualAmount.toFixed(1)}km`, 'success');
+                    } else {
+                        this.notify('资金不足！', 'warning');
+                    }
+                }
+                
+                this.updateUI();
+            }
+            
+            getCurrentTerrain() {
+                const ratio = this.progress.built / this.progress.total;
+                const terrains = {
+                    savanna: { type: 'savanna', cost: 2, speed: 1.0 },
+                    jungle: { type: 'jungle', cost: 3, speed: 0.6 },
+                    desert: { type: 'desert', cost: 2.5, speed: 0.8 },
+                    plateau: { type: 'plateau', cost: 2, speed: 0.9 }
+                };
+                
+                if (this.selectedRoute === 'east') {
+                    if (ratio < 0.7) return terrains.savanna;
+                    return { type: 'rift', cost: 5, speed: 0.4 }; // Rift valley
+                } else if (this.selectedRoute === 'west') {
+                    return terrains.jungle;
+                } else if (this.selectedRoute === 'central') {
+                    if (ratio < 0.5) return terrains.plateau;
+                    return terrains.savanna;
+                } else {
+                    if (ratio < 0.6) return terrains.desert;
+                    return terrains.plateau;
+                }
+            }
+            
+            hireWorkers() {
+                if (this.resources.money >= 10) {
+                    this.resources.money -= 10;
+                    this.resources.workers += 1000;
+                    this.notify('招募1000名当地工人，促进就业', 'success');
+                    this.updateUI();
+                }
+            }
+            
+            triggerEvent() {
+                const terrain = this.getCurrentTerrain().type;
+                const validEvents = this.events.filter(e => 
+                    e.terrain.includes(terrain) || e.terrain.includes('all')
+                );
+                
+                if (validEvents.length === 0) return;
+                
+                const event = validEvents[Math.floor(Math.random() * validEvents.length)];
+                this.activeEvent = event;
+                
+                document.getElementById('eventIcon').textContent = event.icon;
+                document.getElementById('eventTitle').textContent = event.title;
+                document.getElementById('eventDesc').textContent = event.desc;
+                
+                const choicesDiv = document.getElementById('eventChoices');
+                choicesDiv.innerHTML = '';
+                
+                event.choices.forEach((choice, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    let effectText = [];
+                    if (choice.effects.cost) effectText.push(`资金-${choice.effects.cost}M`);
+                    if (choice.effects.delay) effectText.push(`时间+${choice.effects.delay}月`);
+                    if (choice.effects.diplomacy > 0) effectText.push(`外交+${choice.effects.diplomacy}`);
+                    if (choice.effects.diplomacy < 0) effectText.push(`外交${choice.effects.diplomacy}`);
+                    if (choice.effects.env) effectText.push(`环保+${choice.effects.env}`);
+                    
+                    btn.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 5px;">${choice.text}</div>
+                        <div class="choice-effect">${effectText.join(' | ')}</div>
+                    `;
+                    btn.onclick = () => this.resolveEvent(idx);
+                    choicesDiv.appendChild(btn);
+                });
+                
+                document.getElementById('eventModal').classList.add('active');
+                this.gameState = 'event';
+            }
+            
+            resolveEvent(choiceIdx) {
+                const event = this.activeEvent;
+                const choice = event.choices[choiceIdx];
+                const effects = choice.effects;
+                
+                if (effects.cost) this.resources.money -= effects.cost;
+                if (effects.delay) {
+                    for (let i = 0; i < effects.delay; i++) this.monthlyUpdate();
+                }
+                if (effects.diplomacy) this.resources.diplomacy += effects.diplomacy;
+                if (effects.env) this.progress.quality += effects.env;
+                if (effects.workers) this.resources.workers += effects.workers;
+                if (effects.supplies) this.resources.supplies += effects.supplies;
+                if (effects.tech && effects.tech === 'wildlife') {
+                    this.techTree.find(t => t.id === 'wildlife').researched = true;
+                }
+                
+                document.getElementById('eventModal').classList.remove('active');
+                this.activeEvent = null;
+                this.gameState = 'playing';
+                this.updateUI();
+            }
+            
+            openTech() {
+                const panel = document.getElementById('techPanel');
+                const grid = document.getElementById('techGrid');
+                grid.innerHTML = '';
+                
+                this.techTree.forEach(tech => {
+                    const div = document.createElement('div');
+                    div.className = `tech-item ${tech.researched ? 'researched' : ''} ${this.resources.money < tech.cost ? 'locked' : ''}`;
+                    div.innerHTML = `
+                        <div class="tech-icon">${tech.icon}</div>
+                        <div class="tech-name">${tech.name}</div>
+                        <div class="tech-cost">${tech.researched ? '已研发' : '$' + tech.cost + 'M'}</div>
+                    `;
+                    if (!tech.researched && this.resources.money >= tech.cost) {
+                        div.onclick = () => this.researchTech(tech);
+                    }
+                    grid.appendChild(div);
+                });
+                
+                panel.classList.add('active');
+                this.gameState = 'paused';
+            }
+            
+            researchTech(tech) {
+                if (this.resources.money >= tech.cost && !tech.researched) {
+                    this.resources.money -= tech.cost;
+                    tech.researched = true;
+                    this.notify(`研发成功：${tech.name}`, 'success');
+                    this.openTech(); // Refresh
+                    this.updateUI();
+                }
+            }
+            
+            closeTech() {
+                document.getElementById('techPanel').classList.remove('active');
+                this.gameState = 'playing';
+            }
+            
+            hasTech(id) {
+                return this.techTree.find(t => t.id === id)?.researched || false;
+            }
+            
+            openDiplomacy() {
+                const panel = document.getElementById('diplomacyPanel');
+                const list = document.getElementById('countryList');
+                list.innerHTML = '';
+                
+                this.diplomaticRelations.forEach(country => {
+                    const div = document.createElement('div');
+                    div.className = 'country-item';
+                    div.innerHTML = `
+                        <div class="country-flag">${country.flag}</div>
+                        <div class="country-info">
+                            <div class="country-name">${country.name}</div>
+                            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">
+                                关切: ${country.issues.join(', ')}
+                            </div>
+                            <div class="relation-bar">
+                                <div class="relation-fill" style="width: ${country.relation}%"></div>
+                            </div>
+                        </div>
+                        <button class="action-btn" style="min-width: auto; padding: 8px 15px;" 
+                                onclick="game.improveRelation('${country.name}')">
+                            <span style="font-size: 0.8rem;">投资</span>
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+                
+                panel.classList.add('active');
+                this.gameState = 'paused';
+            }
+            
+            improveRelation(countryName) {
+                if (this.resources.money >= 15) {
+                    this.resources.money -= 15;
+                    const country = this.diplomaticRelations.find(c => c.name === countryName);
+                    country.relation = Math.min(100, country.relation + 15);
+                    this.resources.diplomacy = Math.min(100, this.resources.diplomacy + 5);
+                    this.notify(`与${countryName}关系改善`, 'success');
+                    this.openDiplomacy(); // Refresh
+                    this.updateUI();
+                }
+            }
+            
+            closeDiplomacy() {
+                document.getElementById('diplomacyPanel').classList.remove('active');
+                this.gameState = 'playing';
+            }
+            
+            togglePause() {
+                this.time.paused = !this.time.paused;
+                document.getElementById('pauseBtn').classList.toggle('active', this.time.paused);
+                document.getElementById('playBtn').classList.toggle('active', !this.time.paused && this.time.speed === 1);
+                document.getElementById('fastBtn').classList.toggle('active', !this.time.paused && this.time.speed === 3);
+            }
+            
+            setSpeed(speed) {
+                this.time.speed = speed;
+                this.time.paused = false;
+                document.getElementById('pauseBtn').classList.remove('active');
+                document.getElementById('playBtn').classList.toggle('active', speed === 1);
+                document.getElementById('fastBtn').classList.toggle('active', speed === 3);
+            }
+            
+            updateTimeDisplay() {
+                document.getElementById('timeDisplay').textContent = 
+                    `${this.time.year}.${this.time.month.toString().padStart(2, '0')}`;
+            }
+            
+            updateUI() {
+                document.getElementById('moneyDisplay').textContent = Math.floor(this.resources.money);
+                document.getElementById('workerDisplay').textContent = this.resources.workers.toLocaleString();
+                document.getElementById('supplyDisplay').textContent = Math.floor(this.resources.supplies) + '%';
+                document.getElementById('diploDisplay').textContent = this.resources.diplomacy + '%';
+                
+                document.getElementById('moneyBar').style.width = Math.min(100, this.resources.money / 5) + '%';
+                document.getElementById('workerBar').style.width = Math.min(100, this.resources.workers / 100) + '%';
+                document.getElementById('supplyBar').style.width = this.resources.supplies + '%';
+                document.getElementById('diploBar').style.width = this.resources.diplomacy + '%';
+                
+                // Warning colors
+                document.getElementById('moneyBar').classList.toggle('warning', this.resources.money < 50);
+                document.getElementById('diploBar').classList.toggle('warning', this.resources.diplomacy < 30);
+            }
+            
+            notify(text, type = 'normal') {
+                const area = document.getElementById('notificationArea');
+                const div = document.createElement('div');
+                div.className = `notification ${type}`;
+                div.textContent = text;
+                area.appendChild(div);
+                
+                setTimeout(() => div.remove(), 4000);
+            }
+            
+            addParticles(type) {
+                for (let i = 0; i < 5; i++) {
+                    this.particles.push({
+                        x: this.trainPos.x + (Math.random() - 0.5) * 40,
+                        y: this.trainPos.y + (Math.random() - 0.5) * 20,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: -Math.random() * 3,
+                        life: 1,
+                        type
+                    });
+                }
+            }
+            
+            victory() {
+                this.gameState = 'ended';
+                clearInterval(this.timeInterval);
+                
+                document.getElementById('gameOverScreen').classList.add('active');
+                
+                const months = (this.time.year - 2025) * 12 + this.time.month - 1;
+                document.getElementById('endTime').textContent = months + '月';
+                document.getElementById('endCost').textContent = '$' + (500 - this.resources.money + 300).toFixed(0) + 'M';
+                document.getElementById('endDiplo').textContent = this.resources.diplomacy + '%';
+                document.getElementById('endTech').textContent = this.techTree.filter(t => t.researched).length + '项';
+                
+                const routeNames = {
+                    east: '蒙内铁路',
+                    west: '阿卡铁路',
+                    central: '本格拉铁路',
+                    north: '尼罗河走廊'
+                };
+                
+                document.getElementById('endDesc').textContent = 
+                    `你成功建成了${routeNames[this.selectedRoute]}，连接了${this.progress.total}公里的路程，` +
+                    `创造了${Math.floor(this.resources.workers / 2)}个本地就业岗位，成为中非合作的典范。`;
+            }
+            
+            gameOver(reason) {
+                this.gameState = 'ended';
+                clearInterval(this.timeInterval);
+                
+                document.getElementById('gameOverScreen').classList.add('active');
+                document.querySelector('.result-title').textContent = '⚠️ 项目失败';
+                document.querySelector('.result-stats').innerHTML = 
+                    `<p style="color: var(--china-red); font-size: 1.2rem; grid-column: 1/-1;">${reason}</p>`;
+            }
+            
+            draw() {
+                const ctx = this.ctx;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                
+                // Background based on terrain
+                const terrain = this.getCurrentTerrain().type;
+                let bgColor;
+                switch(terrain) {
+                    case 'savanna': bgColor = ['#87CEEB', '#C2B280']; break;
+                    case 'jungle': bgColor = ['#2d5016', '#1a3d0c']; break;
+                    case 'desert': bgColor = ['#F4A460', '#D2691E']; break;
+                    case 'plateau': bgColor = ['#708090', '#2F4F4F']; break;
+                    default: bgColor = ['#87CEEB', '#C2B280'];
+                }
+                
+                const grad = ctx.createLinearGradient(0, 0, 0, h);
+                grad.addColorStop(0, bgColor[0]);
+                grad.addColorStop(1, bgColor[1]);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+                
+                // Draw terrain features
+                this.drawTerrain(ctx, w, h, terrain);
+                
+                // Draw track
+                const progressRatio = this.progress.built / this.progress.total;
+                const trackX = w * 0.1 + (w * 0.8) * progressRatio;
+                
+                // Ground line
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(w * 0.1, h * 0.7);
+                ctx.lineTo(w * 0.9, h * 0.7);
+                ctx.stroke();
+                
+                // Built track
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(w * 0.1, h * 0.7);
+                ctx.lineTo(trackX, h * 0.7);
+                ctx.stroke();
+                
+                // Sleepers
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 2;
+                for (let x = w * 0.1; x < trackX; x += 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, h * 0.7 - 5);
+                    ctx.lineTo(x, h * 0.7 + 5);
+                    ctx.stroke();
+                }
+                
+                // Train
+                this.trainPos = { x: trackX, y: h * 0.7 - 25 };
+                this.drawTrain(ctx, trackX, h * 0.7 - 25);
+                
+                // Particles
+                this.particles = this.particles.filter(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    
+                    if (p.life > 0) {
+                        ctx.fillStyle = p.type === 'spark' ? '#FFD700' : `rgba(139,69,19,${p.life})`;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        return true;
+                    }
+                    return false;
+                });
+                
+                // Progress indicator
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(w/2 - 100, 20, 200, 30);
+                ctx.strokeStyle = '#FFD700';
+                ctx.strokeRect(w/2 - 100, 20, 200, 30);
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(w/2 - 100, 20, 200 * progressRatio, 30);
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${Math.floor(this.progress.built)}/${this.progress.total} km`, w/2, 40);
+            }
+            
+            drawTerrain(ctx, w, h, type) {
+                // Sun
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(w - 80, 80, 40, 0, Math.PI * 2);
+                ctx.fill();
+                
+                if (type === 'savanna') {
+                    // Acacia trees
+                    for (let i = 0; i < 5; i++) {
+                        const x = w * 0.2 + i * w * 0.15;
+                        const y = h * 0.6;
+                        // Trunk
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fillRect(x - 5, y, 10, 40);
+                        // Canopy (flat top)
+                        ctx.fillStyle = '#228B22';
+                        ctx.beginPath();
+                        ctx.ellipse(x, y, 40, 15, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else if (type === 'jungle') {
+                    // Dense vegetation
+                    for (let i = 0; i < 8; i++) {
+                        const x = Math.random() * w;
+                        const y = h * 0.5 + Math.random() * 100;
+                        ctx.fillStyle = '#006400';
+                        ctx.beginPath();
+                        ctx.arc(x, y, 30 + Math.random() * 20, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else if (type === 'desert') {
+                    // Dunes
+                    ctx.fillStyle = '#F4A460';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(i * w/3, h * 0.8);
+                        ctx.quadraticCurveTo(i * w/3 + w/6, h * 0.6, (i + 1) * w/3, h * 0.8);
+                        ctx.fill();
+                    }
+                }
+            }
+            
+            drawTrain(ctx, x, y) {
+                // Engine
+                ctx.fillStyle = '#DE2910';
+                ctx.fillRect(x - 20, y, 40, 25);
+                
+                // Cabin
+                ctx.fillStyle = '#8B0000';
+                ctx.fillRect(x - 15, y - 15, 20, 15);
+                
+                // Window
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(x - 10, y - 10, 10, 8);
+                
+                // Wheels
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(x - 12, y + 25, 6, 0, Math.PI * 2);
+                ctx.arc(x + 12, y + 25, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // China Railway logo hint
+                ctx.fillStyle = '#FFD700';
+                ctx.font = '10px sans-serif';
+                ctx.fillText('CR', x - 6, y + 15);
+                
+                // Smoke
+                if (Math.random() > 0.8) {
+                    this.particles.push({
+                        x: x - 20,
+                        y: y,
+                        vx: -1,
+                        vy: -2,
+                        life: 1,
+                        type: 'smoke'
+                    });
+                }
+            }
+            
+            loop(timestamp) {
+                if (this.gameState === 'playing' || this.gameState === 'event') {
+                    this.draw();
+                }
+                requestAnimationFrame(this.loop);
+            }
+        }
+
+        const game = new ChinaAfricaRailway();
+    </script>
+</body>
+</html>
