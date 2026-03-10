@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北京-首尔高速铁路构想</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        // Tailwind配置
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#FF7D00',
+                        neutral: '#333740',
+                        light: '#F5F7FA',
+                        danger: '#F53F3F',
+                        success: '#00B42A'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .card-shadow {
+                box-shadow: 0 10px 30px rgba(22, 93, 255, 0.1);
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.8s ease-in-out;
+            }
+            .animate-slide-up {
+                animation: slideUp 0.8s ease-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(30px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-light font-sans text-neutral">
+    <!-- 顶部英雄区 -->
+    <header class="relative h-screen flex items-center justify-center overflow-hidden">
+        <!-- 背景图 -->
+        <div class="absolute inset-0 z-0">
+            <img src="https://picsum.photos/id/1018/1920/1080" alt="高铁背景" class="w-full h-full object-cover opacity-30">
+            <div class="absolute inset-0 bg-gradient-to-r from-primary/80 to-secondary/80 mix-blend-multiply"></div>
+        </div>
+        
+        <!-- 英雄区内容 -->
+        <div class="container mx-auto px-6 z-10 text-center animate-fade-in">
+            <h1 class="text-[clamp(2.5rem,8vw,5rem)] font-bold text-white mb-6 text-shadow leading-tight">
+                北京-首尔<br>高速铁路构想
+            </h1>
+            <p class="text-[clamp(1rem,3vw,1.5rem)] text-white mb-8 max-w-3xl mx-auto">
+                连接东北亚的超级动脉 · 重塑地缘格局的宏伟愿景
+            </p>
+            <a href="#overview" class="inline-block bg-white text-primary px-8 py-3 rounded-full font-semibold hover:bg-primary hover:text-white transition-all duration-300 transform hover:scale-105">
+                探索详情 <i class="fa fa-arrow-down ml-2"></i>
+            </a>
+        </div>
+        
+        <!-- 滚动提示 -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <i class="fa fa-angle-double-down text-white text-3xl"></i>
+        </div>
+    </header>
+
+    <!-- 概览部分 -->
+    <section id="overview" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 animate-slide-up">
+                <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-neutral mb-4">项目核心概览</h2>
+                <div class="w-20 h-1 bg-primary mx-auto mb-8"></div>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    2025年韩国正式提出的首尔-北京高铁构想，是连接东北亚的战略性基础设施规划
+                </p>
+            </div>
+
+            <!-- 核心数据卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- 线路长度 -->
+                <div class="bg-light rounded-2xl p-8 card-shadow hover:transform hover:scale-105 transition-all duration-300">
+                    <div class="text-primary text-4xl mb-4"><i class="fa fa-road"></i></div>
+                    <h3 class="text-xl font-semibold mb-2">线路全长</h3>
+                    <p class="text-3xl font-bold text-neutral">1200<span class="text-lg ml-1">公里</span></p>
+                    <p class="text-gray-500 mt-2">朝鲜境内约500公里</p>
+                </div>
+
+                <!-- 设计时速 -->
+                <div class="bg-light rounded-2xl p-8 card-shadow hover:transform hover:scale-105 transition-all duration-300">
+                    <div class="text-secondary text-4xl mb-4"><i class="fa fa-tachometer"></i></div>
+                    <h3 class="text-xl font-semibold mb-2">设计时速</h3>
+                    <p class="text-3xl font-bold text-neutral">350<span class="text-lg ml-1">km/h</span></p>
+                    <p class="text-gray-500 mt-2">国际顶级高铁标准</p>
+                </div>
+
+                <!-- 全程耗时 -->
+                <div class="bg-light rounded-2xl p-8 card-shadow hover:transform hover:scale-105 transition-all duration-300">
+                    <div class="text-success text-4xl mb-4"><i class="fa fa-clock-o"></i></div>
+                    <h3 class="text-xl font-semibold mb-2">全程耗时</h3>
+                    <p class="text-3xl font-bold text-neutral">3-4<span class="text-lg ml-1">小时</span></p>
+                    <p class="text-gray-500 mt-2">首尔至北京</p>
+                </div>
+
+                <!-- 预计票价 -->
+                <div class="bg-light rounded-2xl p-8 card-shadow hover:transform hover:scale-105 transition-all duration-300">
+                    <div class="text-danger text-4xl mb-4"><i class="fa fa-money"></i></div>
+                    <h3 class="text-xl font-semibold mb-2">预计票价</h3>
+                    <p class="text-3xl font-bold text-neutral">800<span class="text-lg ml-1">元</span></p>
+                    <p class="text-gray-500 mt-2">比机票便宜约45%</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 线路规划 -->
+    <section class="py-20 bg-gradient-to-b from-light to-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 animate-slide-up">
+                <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-neutral mb-4">线路规划</h2>
+                <div class="w-20 h-1 bg-primary mx-auto mb-8"></div>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    釜山 → 首尔 → 平壤 → 新义州 → 跨过鸭绿江 → 接入中国沈丹铁路 → 北京
+                </p>
+            </div>
+
+            <!-- 线路图 -->
+            <div class="relative bg-white rounded-2xl p-8 card-shadow max-w-4xl mx-auto mb-12">
+                <div class="flex flex-col md:flex-row items-center justify-between relative">
+                    <!-- 线路 -->
+                    <div class="absolute top-1/2 left-0 w-full h-1 bg-primary/30 transform -translate-y-1/2 z-0"></div>
+                    <div class="absolute top-1/2 left-0 w-full h-3 bg-primary transform -translate-y-1/2 z-0" style="background: linear-gradient(90deg, #165DFF 0%, #FF7D00 100%); clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);"></div>
+                    
+                    <!-- 站点 -->
+                    <div class="z-10 text-center mb-6 md:mb-0">
+                        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white mx-auto mb-2"><i class="fa fa-map-marker"></i></div>
+                        <h3 class="font-bold text-lg">釜山</h3>
+                    </div>
+                    <div class="z-10 text-center mb-6 md:mb-0">
+                        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white mx-auto mb-2"><i class="fa fa-map-marker"></i></div>
+                        <h3 class="font-bold text-lg">首尔</h3>
+                    </div>
+                    <div class="z-10 text-center mb-6 md:mb-0">
+                        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white mx-auto mb-2"><i class="fa fa-map-marker"></i></div>
+                        <h3 class="font-bold text-lg">平壤</h3>
+                    </div>
+                    <div class="z-10 text-center mb-6 md:mb-0">
+                        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white mx-auto mb-2"><i class="fa fa-map-marker"></i></div>
+                        <h3 class="font-bold text-lg">新义州</h3>
+                    </div>
+                    <div class="z-10 text-center">
+                        <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-white mx-auto mb-2"><i class="fa fa-map-marker"></i></div>
+                        <h3 class="font-bold text-lg">北京</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 替代方案 -->
+            <div class="bg-white rounded-2xl p-8 card-shadow max-w-4xl mx-auto">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fa fa-exchange text-secondary mr-2"></i> 替代方案：中韩海底隧道
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-gray-700 mb-4">路线：中国威海/烟台 ↔ 韩国平泽/仁川</p>
+                        <p class="text-gray-700 mb-4">长度：约374公里</p>
+                        <p class="text-gray-700 mb-4">预估成本：约800亿美元</p>
+                        <p class="text-gray-700">建设周期：10-15年协商</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2 text-primary">核心优势</h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2">
+                            <li>不经过朝鲜，避开政治风险</li>
+                            <li>技术成熟，已有多国成功案例</li>
+                            <li>促进环黄海经济圈发展</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 可行性分析 -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 animate-slide-up">
+                <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold text-neutral mb-4">可行性评估</h2>
+                <div class="w-20 h-1 bg-primary mx-auto mb-8"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <!-- 图表 -->
+                <div class="bg-light rounded-2xl p-6 card-shadow">
+                    <h3 class="text-xl font-semibold mb-6 text-center">各维度可行性评分</h3>
+                    <div class="h-80">
+                        <canvas id="feasibilityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 挑战列表 -->
+                <div class="bg-light rounded-2xl p-6 card-shadow">
+                    <h3 class="text-xl font-semibold mb-6 text-center">主要挑战</h3>
+                    
+                    <!-- 政治障碍 -->
+                    <div class="mb-6 border-l-4 border-danger pl-4">
+                        <h4 class="font-bold text-lg mb-2">政治障碍</h4>
+                        <p class="text-gray-700">朝鲜将韩国列为"首要敌对方"，全面关闭沟通渠道，穿越朝鲜的基建项目触及安全底线</p>
+                    </div>
+
+                    <!-- 国际制裁 -->
+                    <div class="mb-6 border-l-4 border-warning pl-4">
+                        <h4 class="font-bold text-lg mb-2">国际制裁</h4>
+                        <p class="text-gray-700">联合国安理会制裁禁止向朝鲜出口建筑机械、工程设备，限制矿产资源出口</p>
+                    </div>
+
+                    <!-- 技术难题 -->
+                    <div class="mb-6 border-l-4 border-primary pl-4">
+                        <h4 class="font-bold text-lg mb-2">技术难题</h4>
+                        <p class="text-gray-700">朝鲜铁路98%未电气化，轨距差异（1435mm vs 1520mm），需联合国军司令部批准</p>
+                    </div>
+
+                    <!-- 资金缺口 -->
+                    <div class="border-l-4 border-secondary pl-4">
+                        <h4 class="font-bold text-lg mb-2">资金缺口</h4>
+                        <p class="text-gray-700">朝鲜段改造需1100亿人民币，总投资超200亿美元</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 总结部分 -->
+    <section class="py-20 bg-primary text-white">
+        <div class="container mx-auto px-6 max-w-4xl">
+            <h2 class="text-[clamp(1.8rem,5vw,3rem)] font-bold mb-8 text-center">总结</h2>
+            <div class="bg-white/10 rounded-2xl p-8 backdrop-blur-sm">
+                <p class="text-xl leading-relaxed mb-6">
+                    北京-首尔高铁构想是一个<strong class="text-yellow-300">极具战略远见但政治现实极为复杂</strong>的跨国项目。它不仅是交通工程，更是重塑东北亚地缘格局的宏大愿景。
+                </p>
+                <p class="text-xl leading-relaxed mb-6">
+                    其成败不取决于技术或资金，而取决于<strong class="text-yellow-300">朝核问题的政治解决、国际制裁的解除、以及中朝韩三方的战略互信建立</strong>。
+                </p>
+                <p class="text-xl leading-relaxed">
+                    这更像是一份"战略意图说明书"，而非可立即落地的工程规划。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-neutral text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <p class="mb-4">北京-首尔高速铁路构想 · 数据来源：公开资料整理</p>
+            <p class="text-gray-400">© 2026 跨国高铁研究 | 本页面仅为概念展示</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // 可行性分析图表
+        const ctx = document.getElementById('feasibilityChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['技术可行性', '经济可行性', '政治可行性', '短期前景', '长期价值'],
+                datasets: [{
+                    label: '可行性评分',
+                    data: [90, 60, 10, 20, 85],
+                    backgroundColor: 'rgba(22, 93, 255, 0.2)',
+                    borderColor: 'rgba(22, 93, 255, 1)',
+                    pointBackgroundColor: 'rgba(22, 93, 255, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(22, 93, 255, 1)'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // 滚动动画
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-slide-up');
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        document.querySelectorAll('section > div > div').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
