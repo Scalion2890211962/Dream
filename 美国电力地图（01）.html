@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美国电力地图可视化 - US Power Grid Map</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .map-container {
+            filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.5));
+        }
+        
+        .state {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .state:hover {
+            filter: brightness(1.2) drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+            transform: scale(1.01);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .tooltip.visible {
+            opacity: 1;
+            transform: translateY(-10px);
+        }
+        
+        .legend-item {
+            transition: transform 0.2s;
+        }
+        
+        .legend-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .power-line {
+            stroke-dasharray: 5,5;
+            animation: dash 20s linear infinite;
+            opacity: 0.4;
+        }
+        
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -100;
+            }
+        }
+        
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.8)); }
+        }
+        
+        .stat-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #60a5fa;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(96, 165, 250, 0.3);
+            border-radius: 50%;
+            border-top-color: #60a5fa;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Loading Screen -->
+    <div id="loading" class="loading flex flex-col items-center gap-4">
+        <div class="spinner"></div>
+        <div class="text-blue-400 font-semibold tracking-wider">加载地图数据中...</div>
+    </div>
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center glow">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                        美国电力地图
+                    </h1>
+                    <p class="text-xs text-slate-400">US Power Generation & Grid Visualization</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="switchMode('generation')" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-sm font-medium shadow-lg shadow-blue-500/30">
+                    发电量模式
+                </button>
+                <button onclick="switchMode('renewable')" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-sm font-medium">
+                    可再生能源
+                </button>
+                <button onclick="switchMode('consumption')" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-sm font-medium">
+                    电力消费
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6 max-w-7xl mx-auto">
+        
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card rounded-2xl p-6">
+                <div class="text-slate-400 text-sm mb-1">总发电量</div>
+                <div class="text-3xl font-bold text-blue-400">4,178 TWh</div>
+                <div class="text-xs text-slate-500 mt-2">2024年数据</div>
+            </div>
+            <div class="stat-card rounded-2xl p-6">
+                <div class="text-slate-400 text-sm mb-1">可再生能源占比</div>
+                <div class="text-3xl font-bold text-green-400">21.4%</div>
+                <div class="text-xs text-emerald-500 mt-2">↑ 5.2% 同比增长</div>
+            </div>
+            <div class="stat-card rounded-2xl p-6">
+                <div class="text-slate-400 text-sm mb-1">最大发电州</div>
+                <div class="text-3xl font-bold text-yellow-400">德克萨斯州</div>
+                <div class="text-xs text-slate-500 mt-2">483 TWh/年</div>
+            </div>
+            <div class="stat-card rounded-2xl p-6">
+                <div class="text-slate-400 text-sm mb-1">电网覆盖</div>
+                <div class="text-3xl font-bold text-purple-400">3大互联电网</div>
+                <div class="text-xs text-slate-500 mt-2">东部/西部/德州</div>
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Map Visualization -->
+            <div class="lg:col-span-2">
+                <div class="bg-slate-800/50 rounded-3xl p-6 border border-slate-700/50 relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-slate-200">各州电力分布图</h2>
+                        <div class="flex items-center gap-2 text-sm text-slate-400">
+                            <span class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+                            实时数据模拟
+                        </div>
+                    </div>
+                    
+                    <div id="map" class="w-full h-[600px] map-container relative">
+                        <!-- SVG Map will be inserted here -->
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="mt-6 flex flex-wrap gap-4 justify-center">
+                        <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                            <div class="w-4 h-4 rounded bg-[#1e3a8a]"></div>
+                            <span>低 (< 50 TWh)</span>
+                        </div>
+                        <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                            <div class="w-4 h-4 rounded bg-[#3b82f6]"></div>
+                            <span>中低 (50-100)</span>
+                        </div>
+                        <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                            <div class="w-4 h-4 rounded bg-[#60a5fa]"></div>
+                            <span>中等 (100-200)</span>
+                        </div>
+                        <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                            <div class="w-4 h-4 rounded bg-[#93c5fd]"></div>
+                            <span>高 (200-400)</span>
+                        </div>
+                        <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                            <div class="w-4 h-4 rounded bg-[#dbeafe]"></div>
+                            <span>极高 (> 400)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Info -->
+            <div class="space-y-6">
+                
+                <!-- Selected State Info -->
+                <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
+                    <h3 class="text-lg font-semibold mb-4 text-slate-200">州详情</h3>
+                    <div id="state-info" class="space-y-4">
+                        <div class="text-center text-slate-500 py-8">
+                            <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.806-.984A11.962 11.962 0 0115 6c-3.309 0-6.219 1.33-8.25 3.45M15 17V7m0 0L9 7"/>
+                            </svg>
+                            <p>点击地图上的州查看详细信息</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Sources Chart -->
+                <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
+                    <h3 class="text-lg font-semibold mb-4 text-slate-200">全国能源结构</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-400">天然气</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 rounded-full" style="width: 40%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-12 text-right">40%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-400">煤炭</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-slate-600 rounded-full" style="width: 20%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-12 text-right">20%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-400">核能</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-purple-500 rounded-full" style="width: 18%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-12 text-right">18%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-400">风能</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-cyan-400 rounded-full" style="width: 10%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-12 text-right">10%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-400">太阳能</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-yellow-400 rounded-full" style="width: 6%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-12 text-right">6%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-400">水力</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-indigo-400 rounded-full" style="width: 6%"></div>
+                                </div>
+                                <span class="text-sm font-medium w-12 text-right">6%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Status -->
+                <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
+                    <h3 class="text-lg font-semibold mb-4 text-slate-200">电网状态</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <div>
+                                <div class="text-sm font-medium text-green-400">东部互联电网</div>
+                                <div class="text-xs text-slate-400">运行正常 - 负载率 78%</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <div>
+                                <div class="text-sm font-medium text-green-400">西部互联电网</div>
+                                <div class="text-xs text-slate-400">运行正常 - 负载率 82%</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                            <div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                            <div>
+                                <div class="text-sm font-medium text-yellow-400">德州电网 (ERCOT)</div>
+                                <div class="text-xs text-slate-400">高负载 - 负载率 91%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Tooltip -->
+    <div id="tooltip" class="tooltip">
+        <div class="font-bold text-lg mb-1" id="tooltip-state"></div>
+        <div class="text-sm text-slate-400 mb-2" id="tooltip-region"></div>
+        <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+                <span class="text-slate-400">年发电量:</span>
+                <span class="font-mono text-blue-400" id="tooltip-generation"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-400">主要能源:</span>
+                <span class="text-slate-200" id="tooltip-source"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-400">人均用电:</span>
+                <span class="font-mono text-purple-400" id="tooltip-capita"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟的美国各州电力数据
+        const statePowerData = {
+            "Texas": { generation: 483, source: "天然气/风能", capita: "14.2 MWh", renewable: 25, region: "南部" },
+            "Florida": { generation: 245, source: "天然气", capita: "11.8 MWh", renewable: 8, region: "南部" },
+            "Pennsylvania": { generation: 228, source: "天然气/核能", capita: "12.4 MWh", renewable: 12, region: "东北部" },
+            "California": { generation: 198, source: "天然气/太阳能", capita: "6.8 MWh", renewable: 52, region: "西部" },
+            "Illinois": { generation: 184, source: "核能/煤炭", capita: "12.1 MWh", renewable: 15, region: "中西部" },
+            "Ohio": { generation: 152, source: "天然气/煤炭", capita: "11.9 MWh", renewable: 10, region: "中西部" },
+            "New York": { generation: 132, source: "天然气/核能", capita: "7.2 MWh", renewable: 28, region: "东北部" },
+            "Georgia": { generation: 129, source: "天然气/核能", capita: "12.6 MWh", renewable: 11, region: "南部" },
+            "North Carolina": { generation: 124, source: "核能/天然气", capita: "11.4 MWh", renewable: 18, region: "南部" },
+            "Michigan": { generation: 116, source: "天然气/煤炭", capita: "10.8 MWh", renewable: 16, region: "中西部" },
+            "Arizona": { generation: 108, source: "天然气/核能", capita: "11.2 MWh", renewable: 22, region: "西部" },
+            "Indiana": { generation: 106, source: "煤炭/天然气", capita: "12.8 MWh", renewable: 14, region: "中西部" },
+            "Washington": { generation: 116, source: "水力/核能", capita: "11.5 MWh", renewable: 75, region: "西部" },
+            "Tennessee": { generation: 95, source: "核能/天然气", capita: "12.2 MWh", renewable: 13, region: "南部" },
+            "Massachusetts": { generation: 45, source: "天然气", capita: "7.8 MWh", renewable: 35, region: "东北部" },
+            "Wisconsin": { generation: 68, source: "煤炭/天然气", capita: "10.4 MWh", renewable: 19, region: "中西部" },
+            "Colorado": { generation: 62, source: "煤炭/风能", capita: "9.6 MWh", renewable: 35, region: "西部" },
+            "Minnesota": { generation: 58, source: "煤炭/风能", capita: "9.8 MWh", renewable: 42, region: "中西部" },
+            "South Carolina": { generation: 98, source: "核能/天然气", capita: "13.2 MWh", renewable: 9, region: "南部" },
+            "Alabama": { generation: 142, source: "天然气/核能", capita: "14.8 MWh", renewable: 12, region: "南部" },
+            "Louisiana": { generation: 96, source: "天然气", capita: "16.2 MWh", renewable: 6, region: "南部" },
+            "Kentucky": { generation: 75, source: "煤炭", capita: "13.4 MWh", renewable: 8, region: "南部" },
+            "Oregon": { generation: 62, source: "水力/天然气", capita: "9.2 MWh", renewable: 68, region: "西部" },
+            "Oklahoma": { generation: 82, source: "天然气/风能", capita: "13.8 MWh", renewable: 45, region: "南部" },
+            "Connecticut": { generation: 42, source: "天然气/核能", capita: "8.4 MWh", renewable: 16, region: "东北部" },
+            "Utah": { generation: 48, source: "煤炭/天然气", capita: "8.8 MWh", renewable: 20, region: "西部" },
+            "Iowa": { generation: 76, source: "风能/煤炭", capita: "11.6 MWh", renewable: 62, region: "中西部" },
+            "Nevada": { generation: 42, source: "天然气/太阳能", capita: "8.2 MWh", renewable: 38, region: "西部" },
+            "Arkansas": { generation: 58, source: "煤炭/核能", capita: "12.6 MWh", renewable: 18, region: "南部" },
+            "Mississippi": { generation: 62, source: "天然气", capita: "13.4 MWh", renewable: 7, region: "南部" },
+            "Kansas": { generation: 58, source: "煤炭/风能", capita: "11.2 MWh", renewable: 47, region: "中西部" },
+            "New Mexico": { generation: 38, source: "煤炭/天然气", capita: "8.4 MWh", renewable: 35, region: "西部" },
+            "Nebraska": { generation: 52, source: "煤炭/风能", capita: "11.8 MWh", renewable: 35, region: "中西部" },
+            "West Virginia": { generation: 56, source: "煤炭", capita: "14.2 MWh", renewable: 6, region: "南部" },
+            "Idaho": { generation: 22, source: "水力", capita: "10.2 MWh", renewable: 75, region: "西部" },
+            "Hawaii": { generation: 18, source: "石油/太阳能", capita: "6.2 MWh", renewable: 35, region: "西部" },
+            "New Hampshire": { generation: 18, source: "核能/天然气", capita: "8.4 MWh", renewable: 22, region: "东北部" },
+            "Maine": { generation: 16, source: "天然气/水力", capita: "7.8 MWh", renewable: 55, region: "东北部" },
+            "Montana": { generation: 28, source: "煤炭/水力", capita: "11.4 MWh", renewable: 45, region: "西部" },
+            "Delaware": { generation: 12, source: "天然气", capita: "10.2 MWh", renewable: 15, region: "东北部" },
+            "Rhode Island": { generation: 8, source: "天然气", capita: "7.6 MWh", renewable: 30, region: "东北部" },
+            "South Dakota": { generation: 16, source: "水力/风能", capita: "12.4 MWh", renewable: 82, region: "中西部" },
+            "Alaska": { generation: 6, source: "天然气/石油", capita: "8.8 MWh", renewable: 25, region: "西部" },
+            "North Dakota": { generation: 42, source: "煤炭/风能", capita: "14.8 MWh", renewable: 45, region: "中西部" },
+            "Vermont": { generation: 6, source: "核能/水力", capita: "7.2 MWh", renewable: 78, region: "东北部" },
+            "Wyoming": { generation: 52, source: "煤炭/风能", capita: "16.8 MWh", renewable: 20, region: "西部" },
+            "Maryland": { generation: 38, source: "核能/天然气", capita: "8.6 MWh", renewable: 18, region: "东北部" },
+            "Virginia": { generation: 72, source: "天然气/核能", capita: "10.8 MWh", renewable: 15, region: "南部" },
+            "New Jersey": { generation: 62, source: "天然气/核能", capita: "8.2 MWh", renewable: 12, region: "东北部" }
+        };
+
+        let currentMode = 'generation';
+        let svg, path, g;
+        let width = 960, height = 600;
+
+        // 颜色比例尺
+        const colorScale = d3.scaleThreshold()
+            .domain([50, 100, 200, 400])
+            .range(["#1e3a8a", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"]);
+
+        const renewableScale = d3.scaleThreshold()
+            .domain([20, 40, 60, 80])
+            .range(["#7f1d1d", "#b45309", "#059669", "#0d9488", "#3b82f6"]);
+
+        // 初始化地图
+        async function initMap() {
+            try {
+                // 获取美国 TopoJSON 数据
+                const response = await fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json');
+                const us = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+
+                // 设置 SVG
+                svg = d3.select("#map")
+                    .append("svg")
+                    .attr("viewBox", `0 0 ${width} ${height}`)
+                    .attr("preserveAspectRatio", "xMidYMid meet")
+                    .classed("w-full h-full", true);
+
+                // 投影设置
+                const projection = d3.geoAlbersUsa()
+                    .translate([width / 2, height / 2])
+                    .scale(1000);
+
+                path = d3.geoPath().projection(projection);
+
+                g = svg.append("g");
+
+                // 绘制州
+                const states = topojson.feature(us, us.objects.states).features;
+
+                g.selectAll("path")
+                    .data(states)
+                    .enter().append("path")
+                    .attr("d", path)
+                    .attr("class", "state")
+                    .attr("fill", d => getColor(d.properties.name))
+                    .attr("stroke", "#1e293b")
+                    .attr("stroke-width", 1)
+                    .on("mouseover", handleMouseOver)
+                    .on("mousemove", handleMouseMove)
+                    .on("mouseout", handleMouseOut)
+                    .on("click", handleClick);
+
+                // 添加州边界
+                g.append("path")
+                    .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+                    .attr("fill", "none")
+                    .attr("stroke", "#334155")
+                    .attr("stroke-width", 0.5)
+                    .attr("d", path);
+
+                // 添加电网连接线（模拟）
+                addPowerLines(projection);
+
+            } catch (error) {
+                console.error("地图加载失败:", error);
+                document.getElementById('loading').innerHTML = `
+                    <div class="text-red-400">地图加载失败，请刷新页面重试</div>
+                    <div class="text-sm text-slate-500 mt-2">${error.message}</div>
+                `;
+            }
+        }
+
+        function getColor(stateName) {
+            const data = statePowerData[stateName];
+            if (!data) return "#334155";
+            
+            if (currentMode === 'generation') {
+                return colorScale(data.generation);
+            } else if (currentMode === 'renewable') {
+                return renewableScale(data.renewable);
+            } else {
+                // consumption mode - 模拟数据
+                return colorScale(data.generation * 0.9);
+            }
+        }
+
+        function addPowerLines(projection) {
+            // 主要电网枢纽点
+            const hubs = [
+                {name: "NYC", coords: [-74.006, 40.7128]},
+                {name: "Chicago", coords: [-87.6298, 41.8781]},
+                {name: "Houston", coords: [-95.3698, 29.7604]},
+                {name: "LA", coords: [-118.2437, 34.0522]},
+                {name: "Seattle", coords: [-122.3321, 47.6062]},
+                {name: "Miami", coords: [-80.1918, 25.7617]},
+                {name: "Denver", coords: [-104.9903, 39.7392]},
+                {name: "Atlanta", coords: [-84.388, 33.749]}
+            ];
+
+            // 绘制连接线
+            const connections = [
+                ["NYC", "Chicago"], ["Chicago", "Houston"], ["Houston", "LA"],
+                ["LA", "Seattle"], ["Seattle", "Denver"], ["Denver", "Chicago"],
+                ["Chicago", "Atlanta"], ["Atlanta", "Miami"], ["NYC", "Atlanta"],
+                ["Houston", "Denver"], ["LA", "Denver"]
+            ];
+
+            connections.forEach(([start, end]) => {
+                const startHub = hubs.find(h => h.name === start);
+                const endHub = hubs.find(h => h.name === end);
+                
+                if (startHub && endHub) {
+                    const startProj = projection(startHub.coords);
+                    const endProj = projection(endHub.coords);
+                    
+                    if (startProj && endProj) {
+                        g.append("line")
+                            .attr("x1", startProj[0])
+                            .attr("y1", startProj[1])
+                            .attr("x2", endProj[0])
+                            .attr("y2", endProj[1])
+                            .attr("class", "power-line")
+                            .attr("stroke", "#60a5fa")
+                            .attr("stroke-width", 2)
+                            .attr("opacity", 0.3);
+                    }
+                }
+            });
+
+            // 绘制枢纽点
+            hubs.forEach(hub => {
+                const proj = projection(hub.coords);
+                if (proj) {
+                    g.append("circle")
+                        .attr("cx", proj[0])
+                        .attr("cy", proj[1])
+                        .attr("r", 4)
+                        .attr("fill", "#fbbf24")
+                        .attr("class", "glow");
+                }
+            });
+        }
+
+        function handleMouseOver(event, d) {
+            const stateName = d.properties.name;
+            const data = statePowerData[stateName];
+            
+            if (data) {
+                d3.select(this)
+                    .attr("stroke", "#60a5fa")
+                    .attr("stroke-width", 2);
+                
+                showTooltip(event, stateName, data);
+            }
+        }
+
+        function handleMouseMove(event) {
+            const tooltip = document.getElementById('tooltip');
+            const x = event.pageX + 15;
+            const y = event.pageY - 15;
+            
+            // 防止 tooltip 超出屏幕
+            const rect = tooltip.getBoundingClientRect();
+            const finalX = x + rect.width > window.innerWidth ? x - rect.width - 30 : x;
+            const finalY = y + rect.height > window.innerHeight ? y - rect.height - 30 : y;
+            
+            tooltip.style.left = finalX + 'px';
+            tooltip.style.top = finalY + 'px';
+        }
+
+        function handleMouseOut(event, d) {
+            d3.select(this)
+                .attr("stroke", "#1e293b")
+                .attr("stroke-width", 1);
+            
+            hideTooltip();
+        }
+
+        function handleClick(event, d) {
+            const stateName = d.properties.name;
+            const data = statePowerData[stateName];
+            
+            if (data) {
+                showStateDetails(stateName, data);
+            }
+        }
+
+        function showTooltip(event, stateName, data) {
+            const tooltip = document.getElementById('tooltip');
+            
+            document.getElementById('tooltip-state').textContent = stateName;
+            document.getElementById('tooltip-region').textContent = data.region;
+            document.getElementById('tooltip-generation').textContent = data.generation + " TWh";
+            document.getElementById('tooltip-source').textContent = data.source;
+            document.getElementById('tooltip-capita').textContent = data.capita;
+            
+            tooltip.classList.add('visible');
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('visible');
+        }
+
+        function showStateDetails(stateName, data) {
+            const container = document.getElementById('state-info');
+            
+            // 计算进度条百分比（相对于最大值500）
+            const genPercent = (data.generation / 500) * 100;
+            const renewPercent = data.renewable;
+            
+            container.innerHTML = `
+                <div class="animate-fade-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-2xl font-bold text-white">${stateName}</h4>
+                        <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm border border-blue-500/30">
+                            ${data.region}
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-slate-700/30 rounded-xl p-4 border border-slate-600/30">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-slate-400 text-sm">年发电量</span>
+                                <span class="text-2xl font-bold text-blue-400">${data.generation} <span class="text-sm text-slate-400">TWh</span></span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-1000" 
+                                     style="width: ${genPercent}%"></div>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1">占全国发电量 ${(data.generation/4178*100).toFixed(1)}%</div>
+                        </div>
+
+                        <div class="bg-slate-700/30 rounded-xl p-4 border border-slate-600/30">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-slate-400 text-sm">可再生能源占比</span>
+                                <span class="text-2xl font-bold text-green-400">${data.renewable}%</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full transition-all duration-1000" 
+                                     style="width: ${renewPercent}%"></div>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1">
+                                ${data.renewable > 50 ? '高于全国平均水平' : '低于全国平均水平'}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/30">
+                                <div class="text-xs text-slate-400 mb-1">主要能源</div>
+                                <div class="text-sm font-semibold text-slate-200">${data.source}</div>
+                            </div>
+                            <div class="bg-slate-700/30 rounded-lg p-3 border border-slate-600/30">
+                                <div class="text-xs text-slate-400 mb-1">人均用电</div>
+                                <div class="text-sm font-semibold text-purple-400">${data.capita}</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20 mt-4">
+                            <div class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div class="text-sm text-slate-300">
+                                    ${getStateInsight(stateName, data)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStateInsight(stateName, data) {
+            if (data.renewable > 60) {
+                return `${stateName}是可再生能源发展的领导者，主要依靠水力、风能或太阳能发电，在清洁能源转型方面走在全国前列。`;
+            } else if (data.generation > 300) {
+                return `${stateName}是美国最大的电力生产州之一，拥有庞大的发电基础设施，对全国电网稳定性至关重要。`;
+            } else if (data.capita.includes("14") || data.capita.includes("15") || data.capita.includes("16")) {
+                return `${stateName}人均用电量较高，主要由于工业用电需求大或夏季空调负荷高。`;
+            } else {
+                return `${stateName}的电力结构相对均衡，正在逐步增加清洁能源比例以应对未来能源转型挑战。`;
+            }
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // 更新按钮样式
+            document.querySelectorAll('button').forEach(btn => {
+                if (btn.textContent.includes('发电量') && mode === 'generation') {
+                    btn.className = "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-sm font-medium shadow-lg shadow-blue-500/30";
+                } else if (btn.textContent.includes('可再生') && mode === 'renewable') {
+                    btn.className = "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-sm font-medium shadow-lg shadow-blue-500/30";
+                } else if (btn.textContent.includes('消费') && mode === 'consumption') {
+                    btn.className = "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-sm font-medium shadow-lg shadow-blue-500/30";
+                } else {
+                    btn.className = "px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-sm font-medium";
+                }
+            });
+            
+            // 更新图例
+            updateLegend(mode);
+            
+            // 重新渲染地图颜色
+            g.selectAll(".state")
+                .transition()
+                .duration(750)
+                .attr("fill", d => getColor(d.properties.name));
+        }
+
+        function updateLegend(mode) {
+            const legendContainer = document.querySelector('.mt-6');
+            if (mode === 'renewable') {
+                legendContainer.innerHTML = `
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#7f1d1d]"></div>
+                        <span>低 (< 20%)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#b45309]"></div>
+                        <span>中低 (20-40%)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#059669]"></div>
+                        <span>中等 (40-60%)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#0d9488]"></div>
+                        <span>高 (60-80%)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#3b82f6]"></div>
+                        <span>极高 (> 80%)</span>
+                    </div>
+                `;
+            } else {
+                legendContainer.innerHTML = `
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#1e3a8a]"></div>
+                        <span>低 (< 50 TWh)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#3b82f6]"></div>
+                        <span>中低 (50-100)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#60a5fa]"></div>
+                        <span>中等 (100-200)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#93c5fd]"></div>
+                        <span>高 (200-400)</span>
+                    </div>
+                    <div class="legend-item flex items-center gap-2 text-sm text-slate-300">
+                        <div class="w-4 h-4 rounded bg-[#dbeafe]"></div>
+                        <span>极高 (> 400)</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', initMap);
+    </script>
+</body>
+</html>
