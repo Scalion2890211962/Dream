@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>西伯利亚数据中心建造者 | H5游戏</title>
+    <!-- 外部资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 自定义样式 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0F3460', // 深蓝
+                        secondary: '#1A508B', // 科技蓝
+                        cold: '#58A4B0', // 低温蓝
+                        dark: '#16213E', // 深色
+                        success: '#2ECC71',
+                        warning: '#F39C12',
+                        danger: '#E74C3C',
+                    },
+                    fontFamily: {
+                        game: ['Arial', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .game-shadow {
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            }
+            .btn-hover {
+                transition: all 0.2s ease;
+            }
+            .btn-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            }
+            .progress-bar {
+                background: linear-gradient(90deg, #58A4B0 0%, #1A508B 100%);
+            }
+            .building-card {
+                transition: all 0.3s ease;
+            }
+            .building-card:hover {
+                transform: scale(1.02);
+            }
+            .building-card.disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .building-card.disabled:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-game text-gray-800 min-h-screen">
+    <!-- 游戏容器 -->
+    <div class="max-w-7xl mx-auto bg-white min-h-screen relative">
+        <!-- 游戏头部 -->
+        <header class="bg-primary text-white p-4 shadow-md">
+            <div class="container mx-auto flex flex-wrap justify-between items-center">
+                <div class="flex items-center mb-2 md:mb-0">
+                    <i class="fa fa-server text-2xl mr-2"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">西伯利亚数据中心建造者</h1>
+                </div>
+                
+                <!-- 资源状态栏 -->
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex items-center bg-dark/50 px-3 py-1 rounded">
+                        <i class="fa fa-bolt text-yellow-300 mr-2"></i>
+                        <span>电力: <span id="power">100</span> MW</span>
+                    </div>
+                    <div class="flex items-center bg-dark/50 px-3 py-1 rounded">
+                        <i class="fa fa-rub text-green-300 mr-2"></i>
+                        <span>资金: <span id="money">500000</span> ₽</span>
+                    </div>
+                    <div class="flex items-center bg-dark/50 px-3 py-1 rounded">
+                        <i class="fa fa-snowflake-o text-cold mr-2"></i>
+                        <span>冷却效率: <span id="cooling">70</span> %</span>
+                    </div>
+                    <div class="flex items-center bg-dark/50 px-3 py-1 rounded">
+                        <i class="fa fa-server text-purple-300 mr-2"></i>
+                        <span>算力: <span id="capacity">0</span> PFlops</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 游戏主界面 -->
+        <main class="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- 左侧：建造区域 (占3列) -->
+            <div class="lg:col-span-3">
+                <!-- 游戏地图/数据中心视图 -->
+                <div class="bg-dark rounded-lg p-4 mb-6 game-shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white">西伯利亚数据中心园区</h2>
+                        <div class="bg-primary/80 text-white px-3 py-1 rounded text-sm">
+                            等级: <span id="level">1</span> | 进度: 
+                            <div class="inline-block w-20 h-2 bg-gray-700 rounded-full ml-1">
+                                <div id="progress-bar" class="progress-bar h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 数据中心可视化区域 -->
+                    <div id="datacenter-view" class="bg-gray-800 rounded p-4 min-h-[400px] relative">
+                        <!-- 初始提示 -->
+                        <div id="initial-hint" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                            <i class="fa fa-construction text-5xl mb-4 text-cold"></i>
+                            <p class="text-lg">点击右侧建造面板开始建设你的数据中心</p>
+                            <p class="text-sm mt-2">利用西伯利亚的低温优势，打造高效算力基地</p>
+                        </div>
+                        
+                        <!-- 建造的建筑会动态添加到这里 -->
+                        <div id="buildings-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <!-- 动态生成建筑 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 事件/消息面板 -->
+                <div class="bg-white rounded-lg p-4 game-shadow">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-bell text-warning mr-2"></i>
+                        事件中心
+                    </h2>
+                    <div id="events-container" class="max-h-[200px] overflow-y-auto space-y-3">
+                        <div class="p-3 bg-gray-50 rounded border-l-4 border-primary">
+                            <p class="font-bold">欢迎来到西伯利亚!</p>
+                            <p class="text-sm text-gray-600">你获得了初始资金50万卢布和100MW电力配额，开始建设你的数据中心吧！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：建造面板 (占1列) -->
+            <div class="lg:col-span-1">
+                <!-- 建造菜单 -->
+                <div class="bg-white rounded-lg p-4 mb-6 game-shadow">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-hammer text-secondary mr-2"></i>
+                        建造面板
+                    </h2>
+                    
+                    <!-- 建筑分类标签 -->
+                    <div class="flex flex-wrap mb-4 gap-2">
+                        <button class="bg-primary text-white px-3 py-1 rounded text-sm active-tab">基础设施</button>
+                        <button class="bg-gray-200 px-3 py-1 rounded text-sm">电力系统</button>
+                        <button class="bg-gray-200 px-3 py-1 rounded text-sm">冷却系统</button>
+                        <button class="bg-gray-200 px-3 py-1 rounded text-sm">升级研发</button>
+                    </div>
+                    
+                    <!-- 基础设施建造卡片 -->
+                    <div id="buildings-panel" class="space-y-4">
+                        <!-- 标准机柜 -->
+                        <div class="building-card border rounded-lg p-3 cursor-pointer" data-building="server-rack">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold">标准机柜</h3>
+                                    <p class="text-sm text-gray-600">基础算力单元</p>
+                                    <div class="flex gap-2 mt-2 text-xs">
+                                        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">成本: 50000 ₽</span>
+                                        <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">耗电: 5 MW</span>
+                                        <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded">算力: 10 PFlops</span>
+                                    </div>
+                                </div>
+                                <i class="fa fa-server text-2xl text-secondary"></i>
+                            </div>
+                            <button class="w-full mt-2 bg-secondary text-white py-1 rounded btn-hover">建造</button>
+                        </div>
+                        
+                        <!-- 变电站 -->
+                        <div class="building-card border rounded-lg p-3 cursor-pointer" data-building="substation">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold">变电站</h3>
+                                    <p class="text-sm text-gray-600">电力分配中心</p>
+                                    <div class="flex gap-2 mt-2 text-xs">
+                                        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">成本: 200000 ₽</span>
+                                        <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded">电力+50 MW</span>
+                                    </div>
+                                </div>
+                                <i class="fa fa-bolt text-2xl text-yellow-500"></i>
+                            </div>
+                            <button class="w-full mt-2 bg-secondary text-white py-1 rounded btn-hover">建造</button>
+                        </div>
+                        
+                        <!-- 自然冷却塔 -->
+                        <div class="building-card border rounded-lg p-3 cursor-pointer" data-building="cooling-tower">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold">自然冷却塔</h3>
+                                    <p class="text-sm text-gray-600">利用西伯利亚低温环境</p>
+                                    <div class="flex gap-2 mt-2 text-xs">
+                                        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">成本: 150000 ₽</span>
+                                        <span class="bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded">冷却效率+15%</span>
+                                    </div>
+                                </div>
+                                <i class="fa fa-snowflake-o text-2xl text-cold"></i>
+                            </div>
+                            <button class="w-full mt-2 bg-secondary text-white py-1 rounded btn-hover">建造</button>
+                        </div>
+                        
+                        <!-- 办公区 -->
+                        <div class="building-card border rounded-lg p-3 cursor-pointer disabled" data-building="office">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold">运营办公区</h3>
+                                    <p class="text-sm text-gray-600">管理和维护中心</p>
+                                    <div class="flex gap-2 mt-2 text-xs">
+                                        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">成本: 300000 ₽</span>
+                                        <span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">需要等级2</span>
+                                    </div>
+                                </div>
+                                <i class="fa fa-building text-2xl text-gray-500"></i>
+                            </div>
+                            <button class="w-full mt-2 bg-gray-400 text-white py-1 rounded cursor-not-allowed">建造</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 统计面板 -->
+                <div class="bg-white rounded-lg p-4 game-shadow">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-chart-bar text-secondary mr-2"></i>
+                        运营统计
+                    </h2>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>机柜总数</span>
+                                <span id="total-racks">0</span>
+                            </div>
+                            <div class="w-full h-2 bg-gray-200 rounded-full">
+                                <div class="h-2 bg-purple-500 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>电力利用率</span>
+                                <span id="power-usage">0%</span>
+                            </div>
+                            <div class="w-full h-2 bg-gray-200 rounded-full">
+                                <div class="h-2 bg-yellow-500 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>日收入</span>
+                                <span id="daily-income">0</span> ₽
+                            </div>
+                            <div class="w-full h-2 bg-gray-200 rounded-full">
+                                <div class="h-2 bg-green-500 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="collect-income" class="w-full mt-4 bg-success text-white py-2 rounded btn-hover">
+                        <i class="fa fa-coins mr-1"></i> 收取收益
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 游戏底部 -->
+        <footer class="bg-dark text-white p-4 mt-6">
+            <div class="container mx-auto text-center text-sm">
+                <p>西伯利亚数据中心建造者 © 2026 | H5游戏 | 基于HTML5 + TailwindCSS开发</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 游戏逻辑脚本 -->
+    <script>
+        // 游戏状态数据
+        const gameState = {
+            power: 100,          // 电力 (MW)
+            money: 500000,       // 资金 (₽)
+            cooling: 70,         // 冷却效率 (%)
+            capacity: 0,         // 总算力 (PFlops)
+            level: 1,            // 数据中心等级
+            progress: 0,         // 等级进度 (%)
+            buildings: {         // 已建造的建筑
+                'server-rack': 0,
+                'substation': 0,
+                'cooling-tower': 0,
+                'office': 0
+            },
+            dailyIncome: 0,      // 日收入
+            collectedIncome: 0   // 累计收益
+        };
+
+        // 建筑配置
+        const buildingConfigs = {
+            'server-rack': {
+                name: '标准机柜',
+                cost: 50000,
+                power: 5,
+                capacity: 10,
+                icon: 'fa-server',
+                color: 'text-secondary',
+                income: 10000 // 每日收益
+            },
+            'substation': {
+                name: '变电站',
+                cost: 200000,
+                power: -50, // 负数值表示增加电力上限
+                capacity: 0,
+                icon: 'fa-bolt',
+                color: 'text-yellow-500',
+                income: 0
+            },
+            'cooling-tower': {
+                name: '自然冷却塔',
+                cost: 150000,
+                power: 0,
+                capacity: 0,
+                coolingBoost: 15,
+                icon: 'fa-snowflake-o',
+                color: 'text-cold',
+                income: 0
+            },
+            'office': {
+                name: '运营办公区',
+                cost: 300000,
+                power: 10,
+                capacity: 0,
+                requiredLevel: 2,
+                icon: 'fa-building',
+                color: 'text-gray-500',
+                income: 0
+            }
+        };
+
+        // DOM 元素引用
+        const elements = {
+            power: document.getElementById('power'),
+            money: document.getElementById('money'),
+            cooling: document.getElementById('cooling'),
+            capacity: document.getElementById('capacity'),
+            level: document.getElementById('level'),
+            progressBar: document.getElementById('progress-bar'),
+            buildingsContainer: document.getElementById('buildings-container'),
+            eventsContainer: document.getElementById('events-container'),
+            totalRacks: document.getElementById('total-racks'),
+            powerUsage: document.getElementById('power-usage'),
+            dailyIncome: document.getElementById('daily-income'),
+            collectIncome: document.getElementById('collect-income'),
+            initialHint: document.getElementById('initial-hint')
+        };
+
+        // 更新UI显示
+        function updateUI() {
+            // 更新资源显示
+            elements.power.textContent = gameState.power;
+            elements.money.textContent = formatNumber(gameState.money);
+            elements.cooling.textContent = gameState.cooling;
+            elements.capacity.textContent = gameState.capacity;
+            elements.level.textContent = gameState.level;
+            elements.progressBar.style.width = `${gameState.progress}%`;
+            
+            // 更新统计面板
+            elements.totalRacks.textContent = gameState.buildings['server-rack'];
+            elements.dailyIncome.textContent = formatNumber(gameState.dailyIncome);
+            
+            // 计算电力利用率
+            const usedPower = calculateUsedPower();
+            const powerUsagePercent = Math.round((usedPower / gameState.power) * 100);
+            elements.powerUsage.textContent = `${powerUsagePercent}%`;
+            
+            // 更新进度条
+            document.querySelector('#power-usage + div > div').style.width = `${powerUsagePercent}%`;
+            document.querySelector('#total-racks + div > div').style.width = `${Math.min(gameState.buildings['server-rack'] * 5, 100)}%`;
+            document.querySelector('#daily-income + div > div').style.width = `${Math.min(gameState.dailyIncome / 1000, 100)}%`;
+            
+            // 更新建筑显示
+            updateBuildingsView();
+            
+            // 检查等级升级
+            checkLevelUp();
+        }
+
+        // 格式化数字（添加千位分隔符）
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // 计算已使用电力
+        function calculateUsedPower() {
+            let usedPower = 0;
+            
+            // 机柜耗电
+            usedPower += gameState.buildings['server-rack'] * buildingConfigs['server-rack'].power;
+            
+            // 办公区耗电
+            usedPower += gameState.buildings['office'] * buildingConfigs['office'].power;
+            
+            return usedPower;
+        }
+
+        // 更新建筑视图
+        function updateBuildingsView() {
+            // 清空容器
+            elements.buildingsContainer.innerHTML = '';
+            
+            // 如果有建筑，隐藏初始提示
+            if (Object.values(gameState.buildings).some(count => count > 0)) {
+                elements.initialHint.classList.add('hidden');
+            } else {
+                elements.initialHint.classList.remove('hidden');
+            }
+            
+            // 添加已建造的建筑
+            for (const [type, count] of Object.entries(gameState.buildings)) {
+                if (count > 0) {
+                    const config = buildingConfigs[type];
+                    
+                    // 为每个建筑创建卡片
+                    for (let i = 0; i < count; i++) {
+                        const buildingCard = document.createElement('div');
+                        buildingCard.className = 'bg-gray-700 rounded-lg p-3 text-white game-shadow';
+                        buildingCard.innerHTML = `
+                            <div class="flex flex-col items-center">
+                                <i class="fa ${config.icon} ${config.color} text-3xl mb-2"></i>
+                                <h4 class="font-bold text-center">${config.name}</h4>
+                                ${type === 'server-rack' ? `<p class="text-xs text-gray-300">算力: ${config.capacity} PFlops</p>` : ''}
+                                ${type === 'substation' ? `<p class="text-xs text-gray-300">电力+50 MW</p>` : ''}
+                                ${type === 'cooling-tower' ? `<p class="text-xs text-gray-300">冷却+${config.coolingBoost}%</p>` : ''}
+                            </div>
+                        `;
+                        elements.buildingsContainer.appendChild(buildingCard);
+                    }
+                }
+            }
+        }
+
+        // 添加游戏事件/消息
+        function addEvent(message, type = 'info') {
+            const eventDiv = document.createElement('div');
+            const borderColor = type === 'success' ? 'border-success' : type === 'warning' ? 'border-warning' : type === 'danger' ? 'border-danger' : 'border-primary';
+            
+            eventDiv.className = `p-3 bg-gray-50 rounded border-l-4 ${borderColor}`;
+            eventDiv.innerHTML = `
+                <p class="font-bold">${new Date().toLocaleTimeString()}</p>
+                <p class="text-sm text-gray-600">${message}</p>
+            `;
+            
+            // 添加到顶部
+            elements.eventsContainer.insertBefore(eventDiv, elements.eventsContainer.firstChild);
+            
+            // 滚动到顶部
+            elements.eventsContainer.scrollTop = 0;
+            
+            // 最多保留10条消息
+            if (elements.eventsContainer.children.length > 10) {
+                elements.eventsContainer.removeChild(elements.eventsContainer.lastChild);
+            }
+        }
+
+        // 建造建筑
+        function buildBuilding(type) {
+            const config = buildingConfigs[type];
+            
+            // 检查前置条件
+            if (config.requiredLevel && gameState.level < config.requiredLevel) {
+                addEvent(`需要数据中心等级 ${config.requiredLevel} 才能建造 ${config.name}`, 'warning');
+                return;
+            }
+            
+            // 检查资金
+            if (gameState.money < config.cost) {
+                addEvent(`资金不足，无法建造 ${config.name} (需要 ${formatNumber(config.cost)} ₽)`, 'danger');
+                return;
+            }
+            
+            // 检查电力（变电站除外，因为它增加电力）
+            if (type !== 'substation' && config.power > 0) {
+                const usedPower = calculateUsedPower();
+                if (usedPower + config.power > gameState.power) {
+                    addEvent(`电力不足，无法建造 ${config.name}`, 'danger');
+                    return;
+                }
+            }
+            
+            // 扣除资金
+            gameState.money -= config.cost;
+            
+            // 更新建筑数量
+            gameState.buildings[type]++;
+            
+            // 更新相关属性
+            if (type === 'server-rack') {
+                gameState.capacity += config.capacity;
+                gameState.dailyIncome += config.income;
+                gameState.progress += 5; // 增加等级进度
+            } else if (type === 'substation') {
+                gameState.power -= config.power; // 因为配置中是负数
+                gameState.progress += 10;
+            } else if (type === 'cooling-tower') {
+                gameState.cooling += config.coolingBoost;
+                gameState.progress += 8;
+            }
+            
+            // 添加事件消息
+            addEvent(`成功建造 ${config.name}！`, 'success');
+            
+            // 更新UI
+            updateUI();
+        }
+
+        // 检查等级升级
+        function checkLevelUp() {
+            if (gameState.progress >= 100) {
+                gameState.level++;
+                gameState.progress = gameState.progress - 100;
+                gameState.power += 50; // 升级奖励电力
+                gameState.money += 100000; // 升级奖励资金
+                
+                addEvent(`恭喜！数据中心升级到 ${gameState.level} 级，获得50MW电力和10万卢布奖励！`, 'success');
+                
+                // 解锁新建筑（如果有）
+                if (gameState.level >= 2) {
+                    const officeCard = document.querySelector('[data-building="office"]');
+                    if (officeCard) {
+                        officeCard.classList.remove('disabled');
+                        officeCard.querySelector('button').classList.remove('bg-gray-400', 'cursor-not-allowed');
+                        officeCard.querySelector('button').classList.add('bg-secondary');
+                        officeCard.querySelector('button').removeAttribute('disabled');
+                    }
+                    addEvent('解锁新建筑：运营办公区！', 'info');
+                }
+            }
+        }
+
+        // 收取收益
+        function collectIncome() {
+            if (gameState.dailyIncome <= 0) {
+                addEvent('暂无收益可收取，请先建造机柜', 'warning');
+                return;
+            }
+            
+            gameState.money += gameState.dailyIncome;
+            addEvent(`成功收取 ${formatNumber(gameState.dailyIncome)} 卢布收益！`, 'success');
+            updateUI();
+        }
+
+        // 初始化游戏
+        function initGame() {
+            // 绑定建造按钮事件
+            document.querySelectorAll('.building-card button:not(.cursor-not-allowed)').forEach(button => {
+                button.addEventListener('click', function() {
+                    const buildingType = this.closest('.building-card').dataset.building;
+                    buildBuilding(buildingType);
+                });
+            });
+            
+            // 绑定收益收取按钮
+            elements.collectIncome.addEventListener('click', collectIncome);
+            
+            // 初始化UI
+            updateUI();
+            
+            // 模拟随机事件（每30秒）
+            setInterval(() => {
+                const randomEvent = Math.random();
+                
+                if (randomEvent < 0.1) {
+                    // 能源价格上涨
+                    const cost = Math.round(gameState.dailyIncome * 0.1);
+                    gameState.money -= cost;
+                    addEvent(`能源价格上涨，每日运营成本增加 ${formatNumber(cost)} 卢布`, 'warning');
+                } else if (randomEvent < 0.2) {
+                    // 客户订单增加
+                    const bonus = Math.round(gameState.dailyIncome * 0.2);
+                    gameState.money += bonus;
+                    addEvent(`客户订单增加，获得 ${formatNumber(bonus)} 卢布额外收益！`, 'success');
+                } else if (randomEvent < 0.25) {
+                    // 极端天气
+                    if (gameState.cooling > 70) {
+                        gameState.cooling += 5;
+                        addEvent(`西伯利亚寒潮来袭，冷却效率提升5%！`, 'success');
+                    }
+                }
+                
+                updateUI();
+            }, 30000);
+        }
+
+        // 启动游戏
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
