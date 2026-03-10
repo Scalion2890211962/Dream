@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>滇缅高铁：从横断山脉到印度洋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Noto Serif SC', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 3px;
+        }
+
+        /* 动画定义 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
+        }
+        
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #ef4444, #f59e0b, #ef4444);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-shift 3s ease infinite;
+        }
+
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .neon-border {
+            position: relative;
+        }
+        .neon-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(45deg, #ef4444, #f59e0b, #ef4444);
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .neon-border:hover::before {
+            opacity: 1;
+        }
+
+        /* 铁路线路SVG动画 */
+        .rail-line {
+            stroke-dasharray: 10 5;
+            animation: dash 20s linear infinite;
+        }
+
+        .station-dot {
+            transition: all 0.3s ease;
+        }
+        .station-dot:hover {
+            r: 8;
+            fill: #ef4444;
+            filter: drop-shadow(0 0 10px #ef4444);
+        }
+
+        /* 3D卡片效果 */
+        .card-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+        .card-3d:hover {
+            transform: rotateY(5deg) rotateX(5deg) translateZ(20px);
+        }
+
+        /* 地质层动画 */
+        .geo-layer {
+            animation: slideIn 1s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* 进度条动画 */
+        .progress-fill {
+            transition: width 2s ease-out;
+        }
+
+        /* 隐藏滚动触发动画 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease-out;
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 地图标记脉冲 */
+        .map-marker {
+            animation: pulse-glow 2s infinite;
+        }
+
+        /* 响应式字体 */
+        .hero-title {
+            font-size: clamp(2rem, 8vw, 5rem);
+            line-height: 1.1;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 w-full z-50 glass-panel border-b border-white/10 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-xl tracking-wider">滇缅高铁</span>
+                </div>
+                <div class="hidden md:flex space-x-8 text-sm font-medium text-gray-300">
+                    <a href="#vision" class="hover:text-red-500 transition-colors">战略构想</a>
+                    <a href="#route" class="hover:text-red-500 transition-colors">线路规划</a>
+                    <a href="#engineering" class="hover:text-red-500 transition-colors">工程奇迹</a>
+                    <a href="#myanmar" class="hover:text-red-500 transition-colors">缅甸段进展</a>
+                    <a href="#future" class="hover:text-red-500 transition-colors">未来展望</a>
+                </div>
+                <button class="md:hidden text-white" onclick="toggleMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden glass-panel border-t border-white/10">
+            <div class="px-4 pt-2 pb-6 space-y-2">
+                <a href="#vision" class="block py-2 text-gray-300 hover:text-red-500">战略构想</a>
+                <a href="#route" class="block py-2 text-gray-300 hover:text-red-500">线路规划</a>
+                <a href="#engineering" class="block py-2 text-gray-300 hover:text-red-500">工程奇迹</a>
+                <a href="#myanmar" class="block py-2 text-gray-300 hover:text-red-500">缅甸段进展</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区 -->
+    <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <!-- 动态背景 -->
+        <div class="absolute inset-0 z-0">
+            <div class="absolute inset-0 bg-gradient-to-b from-black via-red-900/20 to-black"></div>
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.15) 0%, transparent 50%);"></div>
+            <!-- 山脉轮廓SVG -->
+            <svg class="absolute bottom-0 w-full h-64 opacity-30" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                <path fill="#1a1a1a" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,208C1248,192,1344,192,1392,192L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="mb-6 inline-block px-4 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-medium tracking-wider animate-pulse">
+                一带一路 · 泛亚铁路西线 · 2025最新进展
+            </div>
+            <h1 class="hero-title font-black mb-6 tracking-tight">
+                <span class="block text-white">穿越</span>
+                <span class="gradient-text">横断山脉</span>
+                <span class="block text-white mt-2">直达印度洋</span>
+            </h1>
+            <p class="max-w-2xl mx-auto text-lg md:text-xl text-gray-400 mb-10 leading-relaxed">
+                从<span class="text-red-400 font-semibold">北京</span>到<span class="text-amber-400 font-semibold">仰光</span>，
+                跨越3000公里的钢铁丝路。世界最难掘进隧道——<span class="text-white">高黎贡山隧道</span>正在创造工程奇迹，
+                中缅铁路<span class="text-red-400">木姐-曼德勒段</span>即将启动。
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="scrollToSection('route')" class="px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-full font-bold text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transform hover:scale-105 transition-all">
+                    探索线路
+                </button>
+                <button onclick="scrollToSection('engineering')" class="px-8 py-4 glass-panel rounded-full font-bold text-white border border-white/20 hover:bg-white/10 transition-all">
+                    工程挑战
+                </button>
+            </div>
+            
+            <!-- 关键数据 -->
+            <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <div class="glass-panel p-4 rounded-2xl">
+                    <div class="text-3xl font-bold text-red-500">3000<span class="text-lg text-gray-400">km</span></div>
+                    <div class="text-sm text-gray-400 mt-1">全线总里程</div>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl">
+                    <div class="text-3xl font-bold text-amber-500">34.5<span class="text-lg text-gray-400">km</span></div>
+                    <div class="text-sm text-gray-400 mt-1">高黎贡山隧道</div>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl">
+                    <div class="text-3xl font-bold text-red-500">431<span class="text-lg text-gray-400">km</span></div>
+                    <div class="text-sm text-gray-400 mt-1">木姐-曼德勒段</div>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl">
+                    <div class="text-3xl font-bold text-amber-500">160<span class="text-lg text-gray-400">km/h</span></div>
+                    <div class="text-sm text-gray-400 mt-1">设计时速</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 滚动提示 -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- 战略构想 -->
+    <section id="vision" class="py-20 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="reveal">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 text-center">
+                    战略<span class="text-red-500">构想</span>
+                </h2>
+                <p class="text-center text-gray-400 max-w-3xl mx-auto mb-16">
+                    2025年9月，缅甸代总统敏昂莱大将在天津作出最高级别战略表态：
+                    曼德勒-木姐铁路将与中国"北京-昆明-瑞丽"高铁主干线实现无缝对接。
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="reveal glass-panel p-8 rounded-3xl card-3d neon-border">
+                    <div class="w-14 h-14 bg-red-500/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">印度洋出海口</h3>
+                    <p class="text-gray-400 leading-relaxed">
+                        为中国西南内陆省份提供直达印度洋的陆路通道，绕开马六甲海峡，缩短运输距离3000公里，提升能源安全与贸易效率。
+                    </p>
+                </div>
+
+                <div class="reveal glass-panel p-8 rounded-3xl card-3d neon-border" style="transition-delay: 0.1s">
+                    <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">经济走廊</h3>
+                    <p class="text-gray-400 leading-relaxed">
+                        中缅经济走廊"人字形"构想：曼德勒-仰光、曼德勒-皎漂双通道，带动沿线125万个就业岗位，重塑区域经济格局。
+                    </p>
+                </div>
+
+                <div class="reveal glass-panel p-8 rounded-3xl card-3d neon-border" style="transition-delay: 0.2s">
+                    <div class="w-14 h-14 bg-red-500/20 rounded-2xl flex items-center justify-center mb-6">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">泛亚铁路西线</h3>
+                    <p class="text-gray-400 leading-relaxed">
+                        连接昆明经缅甸至曼谷，最终贯通新加坡，形成"东南亚黄金走廊"的西线通道，完善一带一路铁路网络。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 交互式线路图 -->
+    <section id="route" class="py-20 bg-black/50 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute inset-0" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(239, 68, 68, 0.1) 35px, rgba(239, 68, 68, 0.1) 70px);"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="reveal text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">线路<span class="text-red-500">全景</span></h2>
+                <p class="text-gray-400">点击站点查看详情 | 北京 → 昆明 → 瑞丽 → 曼德勒 → 仰光/皎漂</p>
+            </div>
+
+            <!-- 交互式地图容器 -->
+            <div class="reveal glass-panel rounded-3xl p-4 md:p-8 mb-8">
+                <div class="relative w-full aspect-[16/9] bg-gradient-to-b from-gray-900 to-black rounded-2xl overflow-hidden" id="map-container">
+                    <!-- SVG线路图 -->
+                    <svg class="w-full h-full" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        
+                        <!-- 背景山脉示意 -->
+                        <path d="M 0 400 Q 200 350 400 380 T 800 360 T 1000 400" fill="none" stroke="#374151" stroke-width="2" opacity="0.3"/>
+                        <path d="M 0 420 Q 300 380 500 400 T 1000 380" fill="none" stroke="#374151" stroke-width="2" opacity="0.2"/>
+                        
+                        <!-- 主线路径 -->
+                        <path id="main-route" d="M 100 150 L 300 200 L 450 280 L 650 300 L 850 320" 
+                              fill="none" stroke="url(#lineGradient)" stroke-width="4" 
+                              class="rail-line" filter="url(#glow)"/>
+                        
+                        <!-- 站点 -->
+                        <g class="stations">
+                            <!-- 北京 -->
+                            <circle cx="100" cy="150" r="6" fill="#ef4444" class="station-dot cursor-pointer" onclick="showStationInfo('beijing')"/>
+                            <text x="100" y="130" text-anchor="middle" fill="white" font-size="12" font-weight="bold">北京</text>
+                            
+                            <!-- 昆明 -->
+                            <circle cx="300" cy="200" r="6" fill="#f59e0b" class="station-dot cursor-pointer" onclick="showStationInfo('kunming')"/>
+                            <text x="300" y="180" text-anchor="middle" fill="white" font-size="12" font-weight="bold">昆明</text>
+                            
+                            <!-- 瑞丽 -->
+                            <circle cx="450" cy="280" r="6" fill="#ef4444" class="station-dot cursor-pointer" onclick="showStationInfo('ruili')"/>
+                            <text x="450" y="260" text-anchor="middle" fill="white" font-size="12" font-weight="bold">瑞丽</text>
+                            
+                            <!-- 木姐 -->
+                            <circle cx="470" cy="285" r="4" fill="#10b981" class="station-dot cursor-pointer" onclick="showStationInfo('muse')"/>
+                            <text x="470" y="310" text-anchor="middle" fill="#10b981" font-size="10">木姐</text>
+                            
+                            <!-- 曼德勒 -->
+                            <circle cx="650" cy="300" r="6" fill="#f59e0b" class="station-dot cursor-pointer" onclick="showStationInfo('mandalay')"/>
+                            <text x="650" y="280" text-anchor="middle" fill="white" font-size="12" font-weight="bold">曼德勒</text>
+                            
+                            <!-- 仰光 -->
+                            <circle cx="850" cy="320" r="6" fill="#3b82f6" class="station-dot cursor-pointer" onclick="showStationInfo('yangon')"/>
+                            <text x="850" y="300" text-anchor="middle" fill="white" font-size="12" font-weight="bold">仰光</text>
+                            
+                            <!-- 皎漂 -->
+                            <circle cx="900" cy="340" r="4" fill="#3b82f6" class="station-dot cursor-pointer" onclick="showStationInfo('kyaukpyu')"/>
+                            <text x="900" y="365" text-anchor="middle" fill="#3b82f6" font-size="10">皎漂</text>
+                        </g>
+                        
+                        <!-- 高黎贡山隧道标记 -->
+                        <rect x="380" y="240" width="80" height="20" rx="10" fill="rgba(239, 68, 68, 0.2)" stroke="#ef4444" stroke-width="1"/>
+                        <text x="420" y="254" text-anchor="middle" fill="#ef4444" font-size="10">高黎贡山隧道</text>
+                    </svg>
+                    
+                    <!-- 站点信息浮窗 -->
+                    <div id="station-popup" class="absolute hidden glass-panel p-4 rounded-xl border border-red-500/30 max-w-xs transition-all duration-300">
+                        <h4 class="font-bold text-lg mb-2 text-red-400" id="popup-title"></h4>
+                        <p class="text-sm text-gray-300" id="popup-content"></p>
+                        <div class="mt-2 text-xs text-gray-500" id="popup-detail"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 路段状态卡片 -->
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="reveal glass-panel p-6 rounded-2xl border-l-4 border-green-500">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="font-bold text-lg">昆明-大理段</h4>
+                        <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">已通车</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1">328<span class="text-sm text-gray-400">km</span></div>
+                    <p class="text-sm text-gray-400">2018年开通，时速200km/h，开启滇西高铁时代</p>
+                </div>
+
+                <div class="reveal glass-panel p-6 rounded-2xl border-l-4 border-yellow-500" style="transition-delay: 0.1s">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="font-bold text-lg">大理-瑞丽段</h4>
+                        <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">建设中</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1">330<span class="text-sm text-gray-400">km</span></div>
+                    <p class="text-sm text-gray-400">高黎贡山隧道掘进中，预计2028年通车</p>
+                </div>
+
+                <div class="reveal glass-panel p-6 rounded-2xl border-l-4 border-blue-500" style="transition-delay: 0.2s">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="font-bold text-lg">木姐-曼德勒段</h4>
+                        <span class="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">前期准备</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1">431<span class="text-sm text-gray-400">km</span></div>
+                    <p class="text-sm text-gray-400">2025年12月成立指导委员会，即将启动</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 工程奇迹：高黎贡山隧道 -->
+    <section id="engineering" class="py-20 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-black via-red-950/10 to-black"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="reveal mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 text-center">
+                    工程<span class="text-red-500">奇迹</span>
+                </h2>
+                <p class="text-center text-gray-400 max-w-3xl mx-auto">
+                    高黎贡山隧道——被国内外专家学者定义为施工难度"世所未有、世所未见"的铁路项目，
+                    中国首条穿越横断山脉的铁路隧道。
+                </p>
+            </div>
+
+            <!-- 3D隧道剖面展示 -->
+            <div class="reveal glass-panel rounded-3xl p-8 mb-12 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl"></div>
+                
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold mb-6 flex items-center">
+                            <span class="w-2 h-8 bg-red-500 rounded-full mr-3"></span>
+                            高黎贡山隧道
+                        </h3>
+                        
+                        <div class="space-y-6">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-red-500 font-bold">34</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-lg">34.538公里</h4>
+                                    <p class="text-gray-400 text-sm">全长，我国铁路最长隧道，最大埋深1155米</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-amber-500 font-bold">17</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-lg">17种地层</h4>
+                                    <p class="text-gray-400 text-sm">穿越19条断裂带，"三高四活跃"地质特征</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-orange-500 font-bold">42</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-lg">42次卡机</h4>
+                                    <p class="text-gray-400 text-sm">"彩云号"TBM硬岩掘进机遭遇极端地质挑战</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-red-500 font-bold">765</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-lg">765米深</h4>
+                                    <p class="text-gray-400 text-sm">1号竖井深度，我国铁路最深竖井，地下温度最高42℃</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 进度条 -->
+                        <div class="mt-8">
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-400">建设进度</span>
+                                <span class="text-red-400 font-bold">56.6%</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+                                <div class="progress-fill bg-gradient-to-r from-red-600 to-orange-500 h-full rounded-full" style="width: 56.6%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">正洞已施工19.58公里，剩余14.95公里</p>
+                        </div>
+                    </div>
+
+                    <!-- 可视化地质剖面 -->
+                    <div class="relative h-96 bg-gray-900 rounded-2xl overflow-hidden border border-gray-800">
+                        <div class="absolute inset-0 flex flex-col justify-end">
+                            <!-- 地质层 -->
+                            <div class="geo-layer h-16 bg-gradient-to-r from-red-900/40 to-orange-900/40 border-t border-red-500/30 relative" style="transform: translateX(-100%); animation-delay: 0.1s">
+                                <span class="absolute left-4 top-2 text-xs text-red-300">高地热层 (42°C)</span>
+                            </div>
+                            <div class="geo-layer h-20 bg-gradient-to-r from-amber-900/40 to-yellow-900/40 border-t border-amber-500/30 relative" style="transform: translateX(-100%); animation-delay: 0.3s">
+                                <span class="absolute left-4 top-2 text-xs text-amber-300">蚀变带 (涌水涌泥)</span>
+                            </div>
+                            <div class="geo-layer h-24 bg-gradient-to-r from-gray-800 to-gray-700 border-t border-gray-600 relative" style="transform: translateX(-100%); animation-delay: 0.5s">
+                                <span class="absolute left-4 top-2 text-xs text-gray-300">断裂带 (19条)</span>
+                            </div>
+                            <div class="geo-layer h-32 bg-gradient-to-r from-stone-800 to-stone-700 border-t border-stone-600 relative" style="transform: translateX(-100%); animation-delay: 0.7s">
+                                <span class="absolute left-4 top-2 text-xs text-stone-300">花岗岩层 (高地应力)</span>
+                            </div>
+                        </div>
+                        
+                        <!-- TBM图标 -->
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse">
+                            <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/50">
+                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </div>
+                            <div class="text-center mt-2 text-xs text-red-400 font-bold">彩云号TBM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技术创新网格 -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="reveal glass-panel p-6 rounded-2xl text-center group hover:bg-white/5 transition-all cursor-pointer">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-red-500/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold mb-2">井下拌合站</h4>
+                    <p class="text-xs text-gray-400">国内首座铁路隧道井下拌合站，解决混凝土运输难题</p>
+                </div>
+
+                <div class="reveal glass-panel p-6 rounded-2xl text-center group hover:bg-white/5 transition-all cursor-pointer" style="transition-delay: 0.1s">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-amber-500/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold mb-2">五绕七洞</h4>
+                    <p class="text-xs text-gray-400">创新施工方案，迂回导坑法应对极端不良地质</p>
+                </div>
+
+                <div class="reveal glass-panel p-6 rounded-2xl text-center group hover:bg-white/5 transition-all cursor-pointer" style="transition-delay: 0.2s">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-orange-500/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold mb-2">泥沙净化</h4>
+                    <p class="text-xs text-gray-400">每小时300立方米处理能力，解决砂化淤泥抽水难题</p>
+                </div>
+
+                <div class="reveal glass-panel p-6 rounded-2xl text-center group hover:bg-white/5 transition-all cursor-pointer" style="transition-delay: 0.3s">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-red-500/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h4 class="font-bold mb-2">彩云号TBM</h4>
+                    <p class="text-xs text-gray-400">国内最大直径硬岩掘进机，直径9.03米，专为复杂地质打造</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 缅甸段进展 -->
+    <section id="myanmar" class="py-20 bg-gradient-to-b from-black to-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="reveal mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 text-center">
+                    缅甸段<span class="text-amber-500">最新进展</span>
+                </h2>
+                <div class="max-w-3xl mx-auto glass-panel p-6 rounded-2xl border border-amber-500/20">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-amber-500 text-xl">📅</span>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg mb-2">2025年12月 · 项目指导委员会成立</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">
+                                缅甸成立由19名部长级官员组成的木姐-曼德勒铁路项目指导委员会，
+                                由交通与通讯部部长妙吞乌担任主席，标志着项目进入实质性推进阶段。
+                                敏昂莱大将此前在天津明确表示，该铁路将与中国"北京-昆明-瑞丽"高铁主干线无缝对接。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="reveal space-y-6">
+                    <h3 class="text-2xl font-bold flex items-center">
+                        <span class="w-1 h-6 bg-amber-500 rounded-full mr-3"></span>
+                        木姐-曼德勒铁路规划
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold">线路全长</h4>
+                                <p class="text-sm text-gray-400">北起木姐，南至曼德勒</p>
+                            </div>
+                            <div class="text-2xl font-bold text-amber-500">431<span class="text-sm text-gray-400">km</span></div>
+                        </div>
+
+                        <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold">设计时速</h4>
+                                <p class="text-sm text-gray-400">客运/货运</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xl font-bold text-white">160<span class="text-sm text-gray-400">km/h</span></div>
+                                <div class="text-sm text-gray-500">120<span class="text-xs">km/h</span></div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold">途经主要城市</h4>
+                                <p class="text-sm text-gray-400">木姐 → 贵概 → 兴威 → 腊戌 → 曼德勒</p>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold">战略意义</h4>
+                                <p class="text-sm text-gray-400">曼德勒至木姐车程将从15小时缩短至3小时</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reveal glass-panel rounded-2xl p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+                    <h3 class="text-xl font-bold mb-6">三阶段建设规划</h3>
+                    
+                    <div class="space-y-6 relative">
+                        <!-- 时间线 -->
+                        <div class="absolute left-4 top-2 bottom-2 w-0.5 bg-gray-800"></div>
+                        
+                        <div class="relative pl-12">
+                            <div class="absolute left-2 top-2 w-4 h-4 bg-amber-500 rounded-full border-4 border-gray-900"></div>
+                            <div class="glass-panel p-4 rounded-xl border-l-2 border-amber-500">
+                                <h4 class="font-bold text-amber-400 mb-1">第一阶段</h4>
+                                <p class="text-sm text-gray-300">木姐-曼德勒铁路（当前优先推进）</p>
+                                <span class="text-xs text-gray-500">可行性研究已完成，即将开工</span>
+                            </div>
+                        </div>
+
+                        <div class="relative pl-12">
+                            <div class="absolute left-2 top-2 w-4 h-4 bg-gray-600 rounded-full border-4 border-gray-900"></div>
+                            <div class="glass-panel p-4 rounded-xl border-l-2 border-gray-600 opacity-70">
+                                <h4 class="font-bold text-gray-400 mb-1">第二阶段</h4>
+                                <p class="text-sm text-gray-300">曼德勒-皎漂铁路</p>
+                                <span class="text-xs text-gray-500">连接印度洋深水港，规划中</span>
+                            </div>
+                        </div>
+
+                        <div class="relative pl-12">
+                            <div class="absolute left-2 top-2 w-4 h-4 bg-gray-600 rounded-full border-4 border-gray-900"></div>
+                            <div class="glass-panel p-4 rounded-xl border-l-2 border-gray-600 opacity-70">
+                                <h4 class="font-bold text-gray-400 mb-1">第三阶段</h4>
+                                <p class="text-sm text-gray-300">曼德勒-仰光铁路</p>
+                                <span class="text-xs text-gray-500">延伸至缅甸第一大城市，远期规划</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                        <p class="text-sm text-amber-200">
+                            <span class="font-bold">注：</span>木姐-瑞丽口岸2023-2024财年贸易额已超20亿美元，
+                            高铁将极大提升中缅贸易物流效率。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 未来展望 -->
+    <section id="future" class="py-20 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-t from-red-950/20 to-black"></div>
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div class="reveal">
+                <h2 class="text-4xl md:text-6xl font-bold mb-8">
+                    从<span class="text-red-500">北京</span>到<span class="text-amber-500">印度洋</span>
+                </h2>
+                <p class="text-xl text-gray-300 mb-12 leading-relaxed">
+                    当高黎贡山隧道最终贯通，当列车从木姐驶向曼德勒，<br>
+                    这条跨越3000公里的钢铁丝路将成为连接中国与印度洋的最短陆路通道，<br>
+                    重塑地缘政治经济格局，书写一带一路的新篇章。
+                </p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto mb-12">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-red-500">10+</div>
+                        <div class="text-sm text-gray-400">年建设历程</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-amber-500">1600+</div>
+                        <div class="text-sm text-gray-400">名建设者坚守</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-red-500">125万</div>
+                        <div class="text-sm text-gray-400">预计就业岗位</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-amber-500">3000</div>
+                        <div class="text-sm text-gray-400">公里海运缩短</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel inline-block p-8 rounded-3xl border border-red-500/30">
+                    <p class="text-lg italic text-gray-300 mb-4">
+                        "地热高干劲更高，应力大决心更大"
+                    </p>
+                    <p class="text-sm text-gray-500">—— 高黎贡山隧道建设者标语</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-black border-t border-white/10 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <div class="w-6 h-6 bg-gradient-to-br from-red-500 to-orange-500 rounded-full"></div>
+                        <span class="font-bold text-lg">滇缅高铁构想</span>
+                    </div>
+                    <p class="text-sm text-gray-500">数据来源：央视网、云南省交通运输厅、新华社等</p>
+                </div>
+                <div class="text-sm text-gray-600">
+                    <p>© 2025 基于公开资料整理 | 非官方项目页面</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 滚动显示动画
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: "0px 0px -50px 0px"
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // 导航栏滚动效果
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > 100) {
+                navbar.classList.add('bg-black/80', 'shadow-lg');
+            } else {
+                navbar.classList.remove('bg-black/80', 'shadow-lg');
+            }
+            lastScroll = currentScroll;
+        });
+
+        // 平滑滚动
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 移动端菜单切换
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // 站点信息数据
+        const stationData = {
+            beijing: {
+                title: "北京",
+                content: "中国首都，京昆瑞高铁起点，全国铁路网核心枢纽。",
+                detail: "京广、京沪、京哈等多条高铁干线交汇点"
+            },
+            kunming: {
+                title: "昆明",
+                content: "云南省会，中缅铁路中国段起点，面向南亚东南亚的辐射中心。",
+                detail: "昆明至大理高铁已通车（2018年）"
+            },
+            ruili: {
+                title: "瑞丽",
+                content: "中缅边境最大口岸城市，大瑞铁路终点，对接缅甸木姐。",
+                detail: "国家重点开发开放试验区"
+            },
+            muse: {
+                title: "木姐 (缅甸)",
+                content: "缅甸掸邦边境城市，中缅最大贸易口岸，缅甸段铁路起点。",
+                detail: "2023-2024财年贸易额超20亿美元"
+            },
+            mandalay: {
+                title: "曼德勒",
+                content: "缅甸第二大城市，旧王朝首都，中缅铁路缅甸段核心枢纽。",
+                detail: "位于缅甸中部，连接仰光与皎漂的分叉点"
+            },
+            yangon: {
+                title: "仰光",
+                content: "缅甸第一大城市，原首都，缅甸经济中心，拥有最大港口。",
+                detail: "殖民时期首都，下缅甸中心城市"
+            },
+            kyaukpyu: {
+                title: "皎漂",
+                content: "缅甸西部深水港，中缅油气管道的起点，印度洋战略出海口。",
+                detail: "中缅经济走廊西线终点，避开了马六甲海峡"
+            }
+        };
+
+        // 显示站点信息
+        function showStationInfo(station) {
+            const popup = document.getElementById('station-popup');
+            const data = stationData[station];
+            
+            document.getElementById('popup-title').textContent = data.title;
+            document.getElementById('popup-content').textContent = data.content;
+            document.getElementById('popup-detail').textContent = data.detail;
+            
+            popup.classList.remove('hidden');
+            
+            // 定位弹窗（简单实现，可根据需要优化）
+            const rect = event.target.getBoundingClientRect();
+            const container = document.getElementById('map-container').getBoundingClientRect();
+            
+            popup.style.left = (rect.left - container.left + 20) + 'px';
+            popup.style.top = (rect.top - container.top - 100) + 'px';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                popup.classList.add('hidden');
+            }, 5000);
+        }
+
+        // 点击其他地方关闭弹窗
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('station-dot')) {
+                document.getElementById('station-popup').classList.add('hidden');
+            }
+        });
+
+        // 进度条动画触发
+        const progressObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.width = entry.target.style.width;
+                }
+            });
+        });
+        
+        document.querySelectorAll('.progress-fill').forEach(el => progressObserver.observe(el));
+    </script>
+</body>
+</html>
