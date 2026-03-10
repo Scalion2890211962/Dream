@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中英航天物资运输系统 | Sino-British Space Logistics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --deep-space: #050508;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--deep-space);
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        .font-orbitron {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        /* Starfield Animation */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        
+        /* Rocket Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(1deg); }
+        }
+        
+        @keyframes thrust {
+            0% { height: 60px; opacity: 0.8; }
+            50% { height: 100px; opacity: 1; }
+            100% { height: 60px; opacity: 0.8; }
+        }
+        
+        .rocket-container {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .flame {
+            animation: thrust 0.5s ease-in-out infinite;
+            background: linear-gradient(to bottom, #ff6b35, #f7931e, transparent);
+            filter: blur(8px);
+        }
+        
+        /* Glassmorphism */
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        /* Progress Bar Animation */
+        @keyframes load {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        
+        .loading-bar {
+            animation: load 2s ease-out forwards;
+        }
+        
+        /* Orbit Animation */
+        @keyframes orbit {
+            from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+        }
+        
+        .orbit-item {
+            animation: orbit 10s linear infinite;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-blue);
+            border-radius: 4px;
+        }
+        
+        /* Glitch Effect */
+        .glitch {
+            position: relative;
+        }
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff00c1;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 #00fff9;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch-anim {
+            0% { clip: rect(31px, 9999px, 94px, 0); }
+            20% { clip: rect(58px, 9999px, 16px, 0); }
+            40% { clip: rect(12px, 9999px, 83px, 0); }
+            60% { clip: rect(89px, 9999px, 43px, 0); }
+            80% { clip: rect(26px, 9999px, 67px, 0); }
+            100% { clip: rect(72px, 9999px, 35px, 0); }
+        }
+        
+        @keyframes glitch-anim2 {
+            0% { clip: rect(65px, 9999px, 99px, 0); }
+            20% { clip: rect(12px, 9999px, 45px, 0); }
+            40% { clip: rect(78px, 9999px, 23px, 0); }
+            60% { clip: rect(34px, 9999px, 89px, 0); }
+            80% { clip: rect(56px, 9999px, 12px, 0); }
+            100% { clip: rect(23px, 9999px, 67px, 0); }
+        }
+        
+        /* Pulse Ring */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Starfield Background -->
+    <div class="stars" id="starfield"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel border-b border-cyan-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full flex items-center justify-center animate-pulse">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-orbitron font-bold text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+                            CNSA-SSTL
+                        </h1>
+                        <p class="text-xs text-gray-400 font-orbitron">SINO-BRITISH SPACE LOGISTICS</p>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex space-x-8">
+                    <button onclick="switchTab('tracking')" class="nav-btn text-cyan-400 hover:text-white transition-colors font-orbitron text-sm tracking-widest uppercase border-b-2 border-cyan-400">
+                        Tracking 追踪
+                    </button>
+                    <button onclick="switchTab('cargo')" class="nav-btn text-gray-400 hover:text-cyan-400 transition-colors font-orbitron text-sm tracking-widest uppercase">
+                        Cargo 货物
+                    </button>
+                    <button onclick="switchTab('routes')" class="nav-btn text-gray-400 hover:text-cyan-400 transition-colors font-orbitron text-sm tracking-widest uppercase">
+                        Routes 航线
+                    </button>
+                    <button onclick="switchTab('status')" class="nav-btn text-gray-400 hover:text-cyan-400 transition-colors font-orbitron text-sm tracking-widest uppercase">
+                        Status 状态
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-xs text-cyan-400 font-orbitron" id="mission-time">T-MINUS 00:00:00</div>
+                        <div class="text-xs text-gray-500">UTC+8 London/Beijing</div>
+                    </div>
+                    <button onclick="toggleLang()" class="px-3 py-1 rounded border border-cyan-500/30 text-cyan-400 text-xs hover:bg-cyan-500/10 transition-all">
+                        EN/中
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+
+        <!-- Hero Section -->
+        <section class="min-h-[80vh] flex flex-col lg:flex-row items-center justify-between gap-12 mb-20">
+            
+            <!-- Left: Info Panel -->
+            <div class="flex-1 space-y-8">
+                <div class="space-y-2">
+                    <div class="inline-block px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-orbitron tracking-widest mb-4">
+                        SYSTEM ONLINE 系统在线
+                    </div>
+                    <h2 class="text-5xl md:text-7xl font-bold font-orbitron leading-tight glitch" data-text="AEROSPACE LOGISTICS">
+                        AEROSPACE<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
+                            LOGISTICS
+                        </span>
+                    </h2>
+                    <p class="text-xl text-gray-400 max-w-lg leading-relaxed">
+                        中英联合航天物资运输网络<br>
+                        <span class="font-orbitron text-sm text-cyan-500/80">Sino-British Joint Space Cargo Network</span>
+                    </p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-panel p-4 rounded-lg border-l-4 border-cyan-500">
+                        <div class="text-2xl font-orbitron font-bold text-cyan-400" id="stat-altitude">408</div>
+                        <div class="text-xs text-gray-400 mt-1">Altitude (km) 高度</div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-lg border-l-4 border-purple-500">
+                        <div class="text-2xl font-orbitron font-bold text-purple-400" id="stat-velocity">7.66</div>
+                        <div class="text-xs text-gray-400 mt-1">Velocity (km/s) 速度</div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-lg border-l-4 border-pink-500">
+                        <div class="text-2xl font-orbitron font-bold text-pink-400" id="stat-cargo">2.4</div>
+                        <div class="text-xs text-gray-400 mt-1">Cargo (tons) 载荷</div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-lg border-l-4 border-green-500">
+                        <div class="text-2xl font-orbitron font-bold text-green-400">98.7%</div>
+                        <div class="text-xs text-gray-400 mt-1">Success Rate 成功率</div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="launchSimulation()" class="group relative px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-lg overflow-hidden font-orbitron font-bold tracking-wider hover:scale-105 transition-transform">
+                        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                        <span class="relative flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            LAUNCH SIM 发射模拟
+                        </span>
+                    </button>
+                    <button onclick="trackCargo()" class="px-8 py-4 glass-panel rounded-lg font-orbitron font-bold tracking-wider hover:bg-white/10 transition-all border border-cyan-500/30">
+                        TRACK CARGO 追踪货物
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: 3D Rocket Visualization -->
+            <div class="flex-1 relative h-[600px] flex items-center justify-center">
+                <!-- Orbit Rings -->
+                <div class="absolute w-[500px] h-[500px] border border-cyan-500/20 rounded-full animate-[spin_20s_linear_infinite]"></div>
+                <div class="absolute w-[400px] h-[400px] border border-purple-500/20 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                <div class="absolute w-[300px] h-[300px] border border-pink-500/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                
+                <!-- Rocket SVG -->
+                <div class="rocket-container relative z-20">
+                    <svg width="200" height="400" viewBox="0 0 200 400" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-2xl filter drop-shadow-[0_0_30px_rgba(0,243,255,0.5)]">
+                        <!-- Rocket Body -->
+                        <path d="M100 20 C140 60 160 150 160 280 L160 320 L100 350 L40 320 L40 280 C40 150 60 60 100 20Z" fill="url(#rocketGradient)" stroke="#00f3ff" stroke-width="2"/>
+                        <!-- Nose Cone -->
+                        <path d="M100 20 C120 40 130 80 130 100 L100 120 L70 100 C70 80 80 40 100 20Z" fill="#1a1a2e" stroke="#00f3ff" stroke-width="1"/>
+                        <!-- Window -->
+                        <circle cx="100" cy="140" r="25" fill="#0a0a0f" stroke="#00f3ff" stroke-width="3"/>
+                        <circle cx="100" cy="140" r="20" fill="url(#windowGradient)"/>
+                        <!-- Fins -->
+                        <path d="M40 280 L10 340 L40 320 Z" fill="#bc13fe" stroke="#00f3ff" stroke-width="1"/>
+                        <path d="M160 280 L190 340 L160 320 Z" fill="#bc13fe" stroke="#00f3ff" stroke-width="1"/>
+                        <path d="M100 320 L100 380 L70 350 Z" fill="#bc13fe" stroke="#00f3ff" stroke-width="1"/>
+                        <path d="M100 320 L100 380 L130 350 Z" fill="#bc13fe" stroke="#00f3ff" stroke-width="1"/>
+                        <!-- Details -->
+                        <line x1="60" y1="200" x2="140" y2="200" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+                        <line x1="60" y1="240" x2="140" y2="240" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+                        
+                        <defs>
+                            <linearGradient id="rocketGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#1e293b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+                            </linearGradient>
+                            <radialGradient id="windowGradient" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#00f3ff;stop-opacity:0.8" />
+                                <stop offset="100%" style="stop-color:#00f3ff;stop-opacity:0.1" />
+                            </radialGradient>
+                        </defs>
+                    </svg>
+                    
+                    <!-- Flame -->
+                    <div class="flame absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-16 rounded-full"></div>
+                    <div class="flame absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-12 rounded-full animation-delay-100"></div>
+                </div>
+
+                <!-- Floating Cargo Items -->
+                <div class="absolute w-full h-full pointer-events-none">
+                    <div class="orbit-item absolute top-1/2 left-1/2 w-8 h-8 bg-cyan-500/20 rounded-lg border border-cyan-400 flex items-center justify-center text-xs">📦</div>
+                    <div class="orbit-item absolute top-1/2 left-1/2 w-6 h-6 bg-purple-500/20 rounded-full border border-purple-400 flex items-center justify-center text-xs animation-delay-2000" style="animation-delay: -3s;">🛰️</div>
+                    <div class="orbit-item absolute top-1/2 left-1/2 w-10 h-10 bg-pink-500/20 rounded-lg border border-pink-400 flex items-center justify-center text-xs animation-delay-4000" style="animation-delay: -6s;">🔬</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tracking Interface -->
+        <section id="tracking-section" class="space-y-8 mb-20">
+            <div class="flex items-center justify-between">
+                <h3 class="text-3xl font-orbitron font-bold text-white flex items-center gap-3">
+                    <span class="w-2 h-8 bg-cyan-500 rounded-full"></span>
+                    LIVE TRACKING 实时追踪
+                </h3>
+                <div class="flex gap-2">
+                    <span class="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs border border-green-500/30 animate-pulse">● LIVE</span>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Map Visualization -->
+                <div class="lg:col-span-2 glass-panel rounded-2xl p-6 relative overflow-hidden min-h-[400px]">
+                    <div class="absolute inset-0 opacity-20">
+                        <svg class="w-full h-full" viewBox="0 0 800 400" preserveAspectRatio="none">
+                            <path d="M0,200 Q200,100 400,200 T800,200" fill="none" stroke="#00f3ff" stroke-width="2" stroke-dasharray="5,5" class="animate-[dash_20s_linear_infinite]"/>
+                            <circle cx="400" cy="200" r="4" fill="#00f3ff" class="animate-ping"/>
+                            <circle cx="400" cy="200" r="150" fill="none" stroke="#bc13fe" stroke-width="1" opacity="0.5"/>
+                            <circle cx="400" cy="200" r="100" fill="none" stroke="#00f3ff" stroke-width="1" opacity="0.3"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Ground Stations -->
+                    <div class="absolute bottom-4 left-4 glass-panel p-4 rounded-lg max-w-xs">
+                        <h4 class="font-orbitron text-cyan-400 text-sm mb-2">GROUND STATIONS 地面站</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Beijing 北京</span>
+                                <span class="text-green-400">● Online</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">London 伦敦</span>
+                                <span class="text-green-400">● Online</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Hainan 海南</span>
+                                <span class="text-yellow-400">◐ Standby</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Position -->
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                        <div class="relative">
+                            <div class="pulse-ring absolute inset-0 rounded-full bg-cyan-500/30"></div>
+                            <div class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-2xl animate-bounce">
+                                🚀
+                            </div>
+                        </div>
+                        <div class="mt-4 glass-panel px-4 py-2 rounded-lg">
+                            <div class="text-xs text-gray-400">CURRENT 当前位置</div>
+                            <div class="font-orbitron text-cyan-400 font-bold">ISS ORBIT</div>
+                            <div class="text-xs text-gray-500">Lat: 51.6° N | Long: 动态</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Data -->
+                <div class="space-y-4">
+                    <div class="glass-panel rounded-xl p-6 border-l-4 border-cyan-500">
+                        <h4 class="font-orbitron text-gray-400 text-xs mb-4">TELEMETRY 遥测数据</h4>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">Fuel 燃料</span>
+                                    <span class="text-cyan-400 font-orbitron">87%</span>
+                                </div>
+                                <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-[87%] animate-pulse"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">Oxygen 氧气</span>
+                                    <span class="text-purple-400 font-orbitron">92%</span>
+                                </div>
+                                <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-[92%]"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-400">Battery 电池</span>
+                                    <span class="text-green-400 font-orbitron">98%</span>
+                                </div>
+                                <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 w-[98%]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-xl p-6">
+                        <h4 class="font-orbitron text-gray-400 text-xs mb-4">CARGO MANIFEST 货物清单</h4>
+                        <div class="space-y-3 max-h-[200px] overflow-y-auto" id="cargo-list">
+                            <div class="flex items-center gap-3 p-2 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+                                <div class="w-8 h-8 rounded bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">📦</div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-bold text-gray-200">Scientific Equipment</div>
+                                    <div class="text-xs text-gray-500">科学设备 | 450kg</div>
+                                </div>
+                                <div class="text-xs text-green-400">✓</div>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+                                <div class="w-8 h-8 rounded bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">🍱</div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-bold text-gray-200">Life Support Supplies</div>
+                                    <div class="text-xs text-gray-500">生命维持物资 | 320kg</div>
+                                </div>
+                                <div class="text-xs text-green-400">✓</div>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+                                <div class="w-8 h-8 rounded bg-pink-500/20 flex items-center justify-center text-pink-400 group-hover:scale-110 transition-transform">🔧</div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-bold text-gray-200">Spare Parts</div>
+                                    <div class="text-xs text-gray-500">备用零件 | 180kg</div>
+                                </div>
+                                <div class="text-xs text-yellow-400">○</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Route Timeline -->
+        <section id="routes-section" class="mb-20">
+            <h3 class="text-3xl font-orbitron font-bold text-white flex items-center gap-3 mb-8">
+                <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                MISSION TIMELINE 任务时间线
+            </h3>
+
+            <div class="relative">
+                <div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-cyan-500 via-purple-500 to-transparent"></div>
+                
+                <div class="space-y-12">
+                    <!-- Launch -->
+                    <div class="relative flex flex-col md:flex-row items-center gap-8 group">
+                        <div class="flex-1 md:text-right order-2 md:order-1">
+                            <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer transform hover:scale-105">
+                                <h4 class="font-orbitron text-xl text-cyan-400 mb-2">LAUNCH 发射</h4>
+                                <p class="text-gray-400 text-sm">Wenchang Space Launch Site 文昌发射场</p>
+                                <div class="mt-2 text-xs text-gray-500 font-orbitron">T+ 00:00:00</div>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-cyan-500 border-4 border-gray-900 z-10 order-1 md:order-2 shadow-[0_0_20px_rgba(0,243,255,0.5)]"></div>
+                        <div class="flex-1 order-3 hidden md:block"></div>
+                    </div>
+
+                    <!-- Stage Separation -->
+                    <div class="relative flex flex-col md:flex-row items-center gap-8 group">
+                        <div class="flex-1 hidden md:block"></div>
+                        <div class="w-8 h-8 rounded-full bg-purple-500 border-4 border-gray-900 z-10 shadow-[0_0_20px_rgba(188,19,254,0.5)]"></div>
+                        <div class="flex-1">
+                            <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer transform hover:scale-105">
+                                <h4 class="font-orbitron text-xl text-purple-400 mb-2">STAGE SEPARATION 级间分离</h4>
+                                <p class="text-gray-400 text-sm">First stage return to landing zone 一级返回着陆区</p>
+                                <div class="mt-2 text-xs text-gray-500 font-orbitron">T+ 00:03:15</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Orbit Insertion -->
+                    <div class="relative flex flex-col md:flex-row items-center gap-8 group">
+                        <div class="flex-1 md:text-right order-2 md:order-1">
+                            <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer transform hover:scale-105">
+                                <h4 class="font-orbitron text-xl text-pink-400 mb-2">ORBIT INSERTION 入轨</h4>
+                                <p class="text-gray-400 text-sm">LEO 400km circularization 近地轨道圆化</p>
+                                <div class="mt-2 text-xs text-gray-500 font-orbitron">T+ 00:08:42</div>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-pink-500 border-4 border-gray-900 z-10 order-1 md:order-2 shadow-[0_0_20px_rgba(236,72,153,0.5)]"></div>
+                        <div class="flex-1 order-3 hidden md:block"></div>
+                    </div>
+
+                    <!-- ISS Docking -->
+                    <div class="relative flex flex-col md:flex-row items-center gap-8 group">
+                        <div class="flex-1 hidden md:block"></div>
+                        <div class="w-8 h-8 rounded-full bg-green-500 border-4 border-gray-900 z-10 shadow-[0_0_20px_rgba(34,197,94,0.5)] animate-pulse"></div>
+                        <div class="flex-1">
+                            <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer transform hover:scale-105 border border-green-500/30">
+                                <h4 class="font-orbitron text-xl text-green-400 mb-2">ISS DOCKING 空间站对接</h4>
+                                <p class="text-gray-400 text-sm">Tianhe Core Module automatic docking 天和核心舱自动对接</p>
+                                <div class="mt-2 text-xs text-gray-500 font-orbitron">T+ 06:30:00 [ESTIMATED]</div>
+                                <div class="mt-3 flex gap-2">
+                                    <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs">AUTO 自动</span>
+                                    <span class="px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 text-xs">RVD 交会对接</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cargo Details Grid -->
+        <section id="cargo-section" class="mb-20">
+            <h3 class="text-3xl font-orbitron font-bold text-white flex items-center gap-3 mb-8">
+                <span class="w-2 h-8 bg-pink-500 rounded-full"></span>
+                CARGO SPECIFICATIONS 货物规格
+            </h3>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="glass-panel rounded-xl overflow-hidden group hover:scale-105 transition-all duration-300 border border-cyan-500/20 hover:border-cyan-500/50">
+                    <div class="h-48 bg-gradient-to-br from-cyan-900/50 to-blue-900/50 relative overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-center text-6xl group-hover:scale-110 transition-transform">🧪</div>
+                        <div class="absolute top-4 right-4 px-2 py-1 bg-cyan-500/20 rounded text-xs text-cyan-400 border border-cyan-500/30">PRIORITY 优先</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="font-orbitron text-lg text-white mb-2">Quantum Experiments</h4>
+                        <p class="text-gray-400 text-sm mb-4">量子科学实验设备 | 微重力环境下的量子纠缠研究</p>
+                        <div class="flex justify-between items-center text-xs text-gray-500 font-orbitron">
+                            <span>MASS: 125kg</span>
+                            <span>VOL: 1.2m³</span>
+                        </div>
+                        <div class="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-cyan-500 w-3/4"></div>
+                        </div>
+                        <div class="mt-2 text-xs text-cyan-400">Loading Complete 装载完成</div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-panel rounded-xl overflow-hidden group hover:scale-105 transition-all duration-300 border border-purple-500/20 hover:border-purple-500/50">
+                    <div class="h-48 bg-gradient-to-br from-purple-900/50 to-pink-900/50 relative overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-center text-6xl group-hover:scale-110 transition-transform">🌱</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="font-orbitron text-lg text-white mb-2">Bio-Lab Samples</h4>
+                        <p class="text-gray-400 text-sm mb-4">生物实验室样本 | 中英联合太空育种项目</p>
+                        <div class="flex justify-between items-center text-xs text-gray-500 font-orbitron">
+                            <span>MASS: 85kg</span>
+                            <span>TEMP: -80°C</span>
+                        </div>
+                        <div class="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-purple-500 w-full"></div>
+                        </div>
+                        <div class="mt-2 text-xs text-purple-400">Cryogenic Storage 低温储存</div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-panel rounded-xl overflow-hidden group hover:scale-105 transition-all duration-300 border border-pink-500/20 hover:border-pink-500/50">
+                    <div class="h-48 bg-gradient-to-br from-pink-900/50 to-orange-900/50 relative overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-center text-6xl group-hover:scale-110 transition-transform">🤖</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="font-orbitron text-lg text-white mb-2">Robotic Components</h4>
+                        <p class="text-gray-400 text-sm mb-4">机械臂组件 | 新一代舱外维修机器人模块</p>
+                        <div class="flex justify-between items-center text-xs text-gray-500 font-orbitron">
+                            <span>MASS: 340kg</span>
+                            <span>CRITICAL</span>
+                        </div>
+                        <div class="mt-4 h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-pink-500 w-1/2 animate-pulse"></div>
+                        </div>
+                        <div class="mt-2 text-xs text-pink-400">Loading in Progress 装载中</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Console -->
+        <section id="status-section" class="glass-panel rounded-2xl p-8 border border-cyan-500/20">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-orbitron font-bold text-white">SYSTEM CONSOLE 系统控制台</h3>
+                <div class="flex gap-2">
+                    <button onclick="clearConsole()" class="px-4 py-2 rounded bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30 transition-colors border border-red-500/30">CLEAR 清除</button>
+                    <button onclick="refreshData()" class="px-4 py-2 rounded bg-cyan-500/20 text-cyan-400 text-xs hover:bg-cyan-500/30 transition-colors border border-cyan-500/30">REFRESH 刷新</button>
+                </div>
+            </div>
+            
+            <div class="bg-black/50 rounded-lg p-4 font-mono text-sm h-64 overflow-y-auto border border-gray-800" id="console-output">
+                <div class="text-green-400">> System initialized 系统初始化完成...</div>
+                <div class="text-cyan-400">> Connecting to CNSA tracking station 连接中国航天测控站...</div>
+                <div class="text-cyan-400">> Connecting to Goonhilly Earth Station 连接英国贡希利地球站...</div>
+                <div class="text-purple-400">> Encryption handshake successful 加密握手成功 [AES-256]</div>
+                <div class="text-gray-400">> Waiting for launch window 等待发射窗口...</div>
+                <div class="text-yellow-400">> Weather check: GO 气象检查: 适宜</div>
+                <div class="text-green-400">> All systems nominal 所有系统正常</div>
+                <div class="animate-pulse text-cyan-400">> Standing by... 待命...</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 mt-20 py-12 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left">
+                <h4 class="font-orbitron text-xl text-white mb-2">CNSA-SSTL COLLABORATION</h4>
+                <p class="text-gray-500 text-sm">中英航天合作组织 | 联合物流指挥部</p>
+            </div>
+            <div class="flex gap-6 text-xs text-gray-600 font-orbitron">
+                <span>SECURE CONNECTION 安全连接</span>
+                <span>•</span>
+                <span>SSL-4096</span>
+                <span>•</span>
+                <span>QUANTUM ENCRYPTED 量子加密</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Starfield
+        function createStars() {
+            const container = document.getElementById('starfield');
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+        }
+        createStars();
+
+        // Mission Timer
+        let missionTime = 0;
+        setInterval(() => {
+            missionTime++;
+            const hours = String(Math.floor(missionTime / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((missionTime % 3600) / 60)).padStart(2, '0');
+            const seconds = String(missionTime % 60).padStart(2, '0');
+            document.getElementById('mission-time').textContent = `T+ ${hours}:${minutes}:${seconds}`;
+        }, 1000);
+
+        // Live Data Simulation
+        setInterval(() => {
+            // Update altitude slightly
+            const alt = 408 + (Math.random() - 0.5) * 2;
+            document.getElementById('stat-altitude').textContent = alt.toFixed(1);
+            
+            // Update velocity
+            const vel = 7.66 + (Math.random() - 0.5) * 0.01;
+            document.getElementById('stat-velocity').textContent = vel.toFixed(2);
+        }, 3000);
+
+        // Console Functions
+        function log(message, type = 'info') {
+            const console = document.getElementById('console-output');
+            const line = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString('en-US', {hour12: false});
+            
+            let color = 'text-gray-400';
+            if (type === 'success') color = 'text-green-400';
+            if (type === 'warning') color = 'text-yellow-400';
+            if (type === 'error') color = 'text-red-400';
+            if (type === 'info') color = 'text-cyan-400';
+            
+            line.className = `${color} mb-1`;
+            line.textContent = `[${timestamp}] > ${message}`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '<div class="text-gray-500">Console cleared. 控制台已清除.</div>';
+        }
+
+        function refreshData() {
+            log('Refreshing telemetry data... 刷新遥测数据...', 'info');
+            setTimeout(() => {
+                log('Data sync complete. 数据同步完成.', 'success');
+                log(`Current altitude: ${document.getElementById('stat-altitude').textContent}km`, 'info');
+            }, 800);
+        }
+
+        // Launch Simulation
+        function launchSimulation() {
+            log('INITIATING LAUNCH SEQUENCE 启动发射程序', 'warning');
+            let count = 5;
+            const countdown = setInterval(() => {
+                if (count > 0) {
+                    log(`T-minus ${count}... ${count}秒...`, 'warning');
+                    count--;
+                } else {
+                    clearInterval(countdown);
+                    log('LIFTOFF! 发射!', 'success');
+                    log('First stage engines nominal 一级发动机正常', 'success');
+                    setTimeout(() => log('Max Q 最大动压', 'warning'), 2000);
+                    setTimeout(() => log('Stage separation confirmed 级间分离确认', 'success'), 4000);
+                    setTimeout(() => log('Orbit insertion burn 入轨点火', 'info'), 6000);
+                }
+            }, 1000);
+        }
+
+        function trackCargo() {
+            log('Scanning cargo transponders... 扫描货物应答器...', 'info');
+            setTimeout(() => {
+                log('All 3 cargo modules located. 全部3个货舱已定位.', 'success');
+                log('Signal strength: -45dBm 信号强度良好', 'info');
+            }, 1500);
+        }
+
+        // Tab Switching
+        function switchTab(tab) {
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-cyan-400', 'border-b-2', 'border-cyan-400');
+                btn.classList.add('text-gray-400');
+            });
+            event.target.classList.remove('text-gray-400');
+            event.target.classList.add('text-cyan-400', 'border-b-2', 'border-cyan-400');
+            
+            // Scroll to section
+            const section = document.getElementById(tab + '-section');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Language Toggle (Simulated)
+        let currentLang = 'zh';
+        function toggleLang() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            log(`Language switched to ${currentLang === 'zh' ? 'English' : '中文'}`, 'info');
+        }
+
+        // Random console messages
+        setInterval(() => {
+            const messages = [
+                { text: 'Telemetry packet received 收到遥测数据包', type: 'info' },
+                { text: 'Solar array efficiency: 98.2% 太阳能电池效率', type: 'info' },
+                { text: 'Ground station handover 地面站切换', type: 'info' },
+                { text: 'Thermal control nominal 热控系统正常', type: 'success' }
+            ];
+            if (Math.random() > 0.7) {
+                const msg = messages[Math.floor(Math.random() * messages.length)];
+                log(msg.text, msg.type);
+            }
+        }, 8000);
+    </script>
+</body>
+</html>
