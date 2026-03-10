@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>澳港筑梦：世界级枢纽建设记</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            background: #f5f8ff;
+            color: #333;
+            overflow-x: hidden;
+        }
+        /* 顶部状态栏 */
+        .status-bar {
+            background: #0056b3;
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .status-bar .money {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        /* 主界面容器 */
+        .main-container {
+            padding: 15px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        /* 工程师培养模块 */
+        .engineer-module {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .engineer-module h2 {
+            font-size: 18px;
+            color: #0056b3;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .engineer-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .engineer-card {
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .engineer-card .name {
+            font-weight: bold;
+            color: #0056b3;
+        }
+        .engineer-card .level {
+            font-size: 12px;
+            color: #666;
+        }
+        .engineer-card .skill {
+            font-size: 12px;
+            color: #008000;
+        }
+        .engineer-card button {
+            background: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 0;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .engineer-card button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        /* 港口建设模块 */
+        .port-module {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .port-module h2 {
+            font-size: 18px;
+            color: #0056b3;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .port-facility {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .port-facility:last-child {
+            border-bottom: none;
+        }
+        .port-facility .info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .port-facility .name {
+            font-weight: bold;
+        }
+        .port-facility .desc {
+            font-size: 12px;
+            color: #666;
+        }
+        .port-facility button {
+            background: #008000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        /* 提示弹窗 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 300px;
+            width: 90%;
+            text-align: center;
+        }
+        .modal-content h3 {
+            margin-bottom: 10px;
+            color: #0056b3;
+        }
+        .modal-content p {
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal-content button {
+            background: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部状态栏 -->
+    <div class="status-bar">
+        <div class="money">
+            <span>💰</span>
+            <span id="money">50000</span> 澳元
+        </div>
+        <div class="level">港口等级：1级</div>
+    </div>
+
+    <!-- 主界面 -->
+    <div class="main-container">
+        <!-- 工程师培养模块 -->
+        <div class="engineer-module">
+            <h2>👷 工程师培养基地</h2>
+            <div class="engineer-list" id="engineerList">
+                <!-- 工程师卡片由JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 港口建设模块 -->
+        <div class="port-module">
+            <h2>🏗️ 港口设施建设</h2>
+            <div class="port-facility">
+                <div class="info">
+                    <div class="name">深水泊位（西海岸）</div>
+                    <div class="desc">升级需：10000澳元 + 土建工程师（进阶）</div>
+                </div>
+                <button onclick="upgradeFacility('deepWaterBerth')">升级</button>
+            </div>
+            <div class="port-facility">
+                <div class="info">
+                    <div class="name">绿电供应站</div>
+                    <div class="desc">升级需：8000澳元 + 绿色能源工程师（入门）</div>
+                </div>
+                <button onclick="upgradeFacility('greenEnergyStation')">升级</button>
+            </div>
+            <div class="port-facility">
+                <div class="info">
+                    <div class="name">自动化调度中心</div>
+                    <div class="desc">升级需：15000澳元 + 智能调度工程师（进阶）</div>
+                </div>
+                <button onclick="upgradeFacility('autoDispatchCenter')">升级</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示弹窗 -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">提示</h3>
+            <p id="modalContent">操作成功！</p>
+            <button onclick="closeModal()">确定</button>
+        </div>
+    </div>
+
+    <script>
+        // 全局数据
+        let gameData = {
+            money: 50000, // 初始资金
+            engineers: [
+                {
+                    id: 1,
+                    name: "港口土建工程师",
+                    type: "civil",
+                    level: "入门",
+                    levelNum: 1,
+                    skill: "降低港区建设成本5%",
+                    exp: 0,
+                    expNeed: 100, // 升级所需经验
+                    learnPoints: 0 // 学习点数
+                },
+                {
+                    id: 2,
+                    name: "绿色能源工程师",
+                    type: "green",
+                    level: "入门",
+                    levelNum: 1,
+                    skill: "减少能源消耗成本5%",
+                    exp: 0,
+                    expNeed: 100,
+                    learnPoints: 0
+                },
+                {
+                    id: 3,
+                    name: "智能调度工程师",
+                    type: "dispatch",
+                    level: "入门",
+                    levelNum: 1,
+                    skill: "提升装卸效率5%",
+                    exp: 0,
+                    expNeed: 100,
+                    learnPoints: 0
+                },
+                {
+                    id: 4,
+                    name: "多式联运工程师",
+                    type: "multimodal",
+                    level: "入门",
+                    levelNum: 1,
+                    skill: "减少中转时间5%",
+                    exp: 0,
+                    expNeed: 100,
+                    learnPoints: 0
+                }
+            ],
+            facilities: {
+                deepWaterBerth: { level: 0, cost: 10000, needEngineer: { type: "civil", levelNum: 2 } },
+                greenEnergyStation: { level: 0, cost: 8000, needEngineer: { type: "green", levelNum: 1 } },
+                autoDispatchCenter: { level: 0, cost: 15000, needEngineer: { type: "dispatch", levelNum: 2 } }
+            }
+        };
+
+        // 初始化工程师列表
+        function initEngineerList() {
+            const engineerList = document.getElementById("engineerList");
+            engineerList.innerHTML = "";
+            gameData.engineers.forEach(engineer => {
+                const card = document.createElement("div");
+                card.className = "engineer-card";
+                card.innerHTML = `
+                    <div class="name">${engineer.name}</div>
+                    <div class="level">等级：${engineer.level}（${engineer.exp}/${engineer.expNeed}经验）</div>
+                    <div class="skill">技能：${engineer.skill}</div>
+                    <button onclick="upgradeEngineer(${engineer.id})" ${engineer.exp >= engineer.expNeed ? "" : "disabled"}>
+                        ${engineer.exp >= engineer.expNeed ? "升级工程师" : "经验不足"}
+                    </button>
+                `;
+                engineerList.appendChild(card);
+            });
+            // 更新资金显示
+            document.getElementById("money").textContent = gameData.money;
+        }
+
+        // 升级工程师
+        function upgradeEngineer(engineerId) {
+            const engineer = gameData.engineers.find(e => e.id === engineerId);
+            if (!engineer || engineer.exp < engineer.expNeed) return;
+
+            // 升级逻辑
+            engineer.levelNum += 1;
+            switch(engineer.levelNum) {
+                case 2:
+                    engineer.level = "进阶";
+                    engineer.skill = engineer.skill.replace("5%", "10%");
+                    break;
+                case 3:
+                    engineer.level = "资深";
+                    engineer.skill = engineer.skill.replace("10%", "15%");
+                    break;
+                case 4:
+                    engineer.level = "专家";
+                    engineer.skill = engineer.skill.replace("15%", "20%") + " + 专属技能";
+                    break;
+                default:
+                    showModal("提示", "该工程师已达最高等级！");
+                    return;
+            }
+            engineer.exp = 0;
+            engineer.expNeed *= 2; // 升级所需经验翻倍
+            showModal("恭喜", `${engineer.name}已升级为${engineer.level}！`);
+            initEngineerList(); // 刷新列表
+        }
+
+        // 升级港口设施
+        function upgradeFacility(facilityId) {
+            const facility = gameData.facilities[facilityId];
+            const needEngineer = gameData.engineers.find(e => e.type === facility.needEngineer.type && e.levelNum >= facility.needEngineer.levelNum);
+
+            // 检查条件
+            if (gameData.money < facility.cost) {
+                showModal("提示", "资金不足，无法升级！");
+                return;
+            }
+            if (!needEngineer) {
+                showModal("提示", `缺少符合要求的工程师（需${facility.needEngineer.type === "civil" ? "土建" : facility.needEngineer.type === "green" ? "绿色能源" : "智能调度"}工程师${facility.needEngineer.levelNum === 1 ? "入门" : "进阶"}及以上）！`);
+                return;
+            }
+
+            // 升级设施
+            facility.level += 1;
+            gameData.money -= facility.cost;
+            // 给对应工程师增加经验
+            const engineer = gameData.engineers.find(e => e.type === facility.needEngineer.type);
+            engineer.exp += 50;
+
+            showModal("恭喜", `${facilityId === "deepWaterBerth" ? "深水泊位" : facilityId === "greenEnergyStation" ? "绿电供应站" : "自动化调度中心"}升级成功！`);
+            initEngineerList(); // 刷新工程师列表（经验变化）
+        }
+
+        // 显示弹窗
+        function showModal(title, content) {
+            document.getElementById("modalTitle").textContent = title;
+            document.getElementById("modalContent").textContent = content;
+            document.getElementById("modal").style.display = "flex";
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById("modal").style.display = "none";
+        }
+
+        // 页面加载初始化
+        window.onload = function() {
+            initEngineerList();
+            // 新手引导弹窗
+            setTimeout(() => {
+                showModal("新手引导", "欢迎来到澳港筑梦！你需要培养工程师，升级港口设施，最终建成世界级枢纽。首先尝试升级绿色能源工程师吧！");
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
