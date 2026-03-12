@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数学守卫战 - 初中数学H5游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            width: 100%;
+            max-width: 800px;
+            height: 100vh;
+            max-height: 600px;
+            background: #1a1a2e;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        #canvas {
+            display: block;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+        }
+        
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .ui-element {
+            pointer-events: auto;
+        }
+        
+        #startScreen, #gameOverScreen, #levelCompleteScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        h1 {
+            color: #fff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #667eea;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 20px #667eea; }
+            50% { text-shadow: 0 0 40px #764ba2, 0 0 60px #667eea; }
+        }
+        
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            padding: 15px 40px;
+            color: white;
+            font-size: 1.2em;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            font-size: 1.1em;
+            z-index: 50;
+        }
+        
+        .stat-box {
+            background: rgba(0,0,0,0.5);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #667eea;
+        }
+        
+        #questionPanel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 60;
+            min-width: 300px;
+            text-align: center;
+        }
+        
+        #questionText {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .answer-input {
+            width: 200px;
+            padding: 10px;
+            font-size: 1.2em;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .answer-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        
+        .tower-selector {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 50;
+        }
+        
+        .tower-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            color: white;
+            transition: all 0.2s;
+        }
+        
+        .tower-btn.selected {
+            border-color: #ffd700;
+            transform: scale(1.1);
+        }
+        
+        .tower-btn.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .tower-linear { background: #e74c3c; }
+        .tower-quad { background: #3498db; }
+        .tower-geo { background: #2ecc71; }
+        
+        .tutorial {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 80%;
+            display: none;
+            z-index: 90;
+        }
+        
+        .hidden { display: none !important; }
+        
+        #feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 80;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .correct { color: #2ecc71; }
+        .wrong { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="canvas"></canvas>
+        
+        <div id="hud" class="ui-layer">
+            <div class="stat-box">❤️ 生命: <span id="lives">20</span></div>
+            <div class="stat-box">💰 金币: <span id="money">100</span></div>
+            <div class="stat-box">🌊 波次: <span id="wave">1</span></div>
+            <div class="stat-box">📊 得分: <span id="score">0</span></div>
+        </div>
+        
+        <div id="towerSelector" class="tower-selector ui-layer" style="display: none;">
+            <div class="tower-btn tower-linear selected" data-type="linear" onclick="selectTower('linear')">
+                <div>🔴</div>
+                <div>一次方程</div>
+            </div>
+            <div class="tower-btn tower-quad" data-type="quad" onclick="selectTower('quad')">
+                <div>🔵</div>
+                <div>二次函数</div>
+            </div>
+            <div class="tower-btn tower-geo locked" data-type="geo" onclick="selectTower('geo')">
+                <div>🟢</div>
+                <div>几何</div>
+            </div>
+        </div>
+        
+        <div id="questionPanel" class="ui-element">
+            <div id="questionText">题目加载中...</div>
+            <input type="number" id="answerInput" class="answer-input" placeholder="输入答案" step="any">
+            <br>
+            <button class="answer-btn" onclick="submitAnswer()">发射！</button>
+        </div>
+        
+        <div id="startScreen" class="ui-element">
+            <h1>数学守卫战</h1>
+            <div class="subtitle">用数学知识保卫基地！</div>
+            <button class="btn" onclick="startGame()">开始游戏</button>
+            <button class="btn" onclick="showTutorial()">游戏说明</button>
+        </div>
+        
+        <div id="gameOverScreen" class="ui-element hidden">
+            <h1>游戏结束</h1>
+            <div class="subtitle">最终得分: <span id="finalScore">0</span></div>
+            <button class="btn" onclick="restartGame()">重新开始</button>
+        </div>
+        
+        <div id="levelCompleteScreen" class="ui-element hidden">
+            <h1>波次完成！</h1>
+            <div class="subtitle">准备下一波敌人...</div>
+            <button class="btn" onclick="nextWave()">下一波</button>
+        </div>
+        
+        <div id="tutorial" class="tutorial ui-element">
+            <h2>🎮 游戏玩法</h2>
+            <p>1. 点击地图放置数学炮塔（一元方程/二次函数/几何）</p>
+            <p>2. 敌人出现时，解答对应的数学题来发射炮弹</p>
+            <p>3. 答对消灭敌人，答错敌人前进</p>
+            <p>4. 守住20点生命值，尽可能获得高分！</p>
+            <br>
+            <button class="btn" onclick="hideTutorial()">明白了</button>
+        </div>
+        
+        <div id="feedback"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 游戏状态
+        let gameState = {
+            lives: 20,
+            money: 100,
+            wave: 1,
+            score: 0,
+            isPlaying: false,
+            selectedTower: 'linear',
+            enemies: [],
+            towers: [],
+            projectiles: [],
+            particles: [],
+            currentQuestion: null,
+            waitingForAnswer: false,
+            waveInProgress: false
+        };
+        
+        // 设置画布大小
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 敌人路径点
+        const path = [
+            {x: 0, y: 100},
+            {x: 150, y: 100},
+            {x: 150, y: 300},
+            {x: 350, y: 300},
+            {x: 350, y: 150},
+            {x: 550, y: 150},
+            {x: 550, y: 350},
+            {x: 750, y: 350},
+            {x: 750, y: 250}
+        ];
+        
+        // 数学题目生成器
+        const questionGenerators = {
+            linear: () => {
+                const a = Math.floor(Math.random() * 9) + 2;
+                const b = Math.floor(Math.random() * 20) + 1;
+                const x = Math.floor(Math.random() * 10) + 1;
+                const result = a * x + b;
+                return {
+                    text: `解方程: ${a}x + ${b} = ${result}`,
+                    answer: x,
+                    type: 'linear'
+                };
+            },
+            quad: () => {
+                const types = ['vertex', 'root', 'standard'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                if (type === 'vertex') {
+                    const a = Math.floor(Math.random() * 3) + 1;
+                    const h = Math.floor(Math.random() * 5) + 1;
+                    const k = Math.floor(Math.random() * 10) + 1;
+                    const x = h;
+                    return {
+                        text: `二次函数 y=${a}(x-${h})²+${k} 的顶点横坐标是?`,
+                        answer: h,
+                        type: 'quad'
+                    };
+                } else if (type === 'root') {
+                    const r1 = Math.floor(Math.random() * 5) + 1;
+                    const r2 = Math.floor(Math.random() * 5) + 6;
+                    return {
+                        text: `方程 (x-${r1})(x-${r2})=0 的较小根是?`,
+                        answer: r1,
+                        type: 'quad'
+                    };
+                } else {
+                    const a = 1;
+                    const b = Math.floor(Math.random() * 10) + 1;
+                    const c = Math.floor(Math.random() * 5) + 1;
+                    const x1 = 1, x2 = c;
+                    const sum = x1 + x2;
+                    return {
+                        text: `x²-${sum}x+${c}=0 的两根之和是?`,
+                        answer: sum,
+                        type: 'quad'
+                    };
+                }
+            },
+            geo: () => {
+                const types = ['triangle', 'circle', 'pythagoras'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                if (type === 'triangle') {
+                    const a = Math.floor(Math.random() * 30) + 30;
+                    const b = Math.floor(Math.random() * 30) + 30;
+                    const c = 180 - a - b;
+                    return {
+                        text: `三角形两角分别为${a}°和${b}°,第三角是?`,
+                        answer: c,
+                        type: 'geo'
+                    };
+                } else if (type === 'circle') {
+                    const r = Math.floor(Math.random() * 5) + 2;
+                    const d = r * 2;
+                    return {
+                        text: `圆半径为${r},直径是?`,
+                        answer: d,
+                        type: 'geo'
+                    };
+                } else {
+                    const a = 3, b = 4;
+                    const c = 5;
+                    return {
+                        text: `直角边为${a}和${b},斜边是?`,
+                        answer: c,
+                        type: 'geo'
+                    };
+                }
+            }
+        };
+        
+        // 敌人类
+        class Enemy {
+            constructor(wave, type) {
+                this.pathIndex = 0;
+                this.x = path[0].x;
+                this.y = path[0].y;
+                this.hp = 10 + wave * 5;
+                this.maxHp = this.hp;
+                this.speed = 1 + wave * 0.2;
+                this.type = type;
+                this.radius = 15;
+                this.frozen = false;
+                this.reward = 10 + wave * 2;
+            }
+            
+            update() {
+                if (this.frozen) return;
+                
+                const target = path[this.pathIndex + 1];
+                if (!target) return;
+                
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 5) {
+                    this.pathIndex++;
+                    if (this.pathIndex >= path.length - 1) {
+                        this.reachBase();
+                    }
+                } else {
+                    this.x += (dx / dist) * this.speed;
+                    this.y += (dy / dist) * this.speed;
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // 根据类型绘制不同敌人
+                if (this.type === 'linear') {
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -15);
+                    ctx.lineTo(13, 10);
+                    ctx.lineTo(-13, 10);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (this.type === 'quad') {
+                    ctx.fillStyle = '#3498db';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.fillRect(-12, -12, 24, 24);
+                }
+                
+                // 血条
+                ctx.fillStyle = '#333';
+                ctx.fillRect(-20, -25, 40, 6);
+                ctx.fillStyle = this.hp > this.maxHp * 0.5 ? '#2ecc71' : '#e74c3c';
+                ctx.fillRect(-20, -25, 40 * (this.hp / this.maxHp), 6);
+                
+                ctx.restore();
+            }
+            
+            takeDamage(dmg) {
+                this.hp -= dmg;
+                if (this.hp <= 0) {
+                    gameState.money += this.reward;
+                    gameState.score += 10;
+                    updateUI();
+                    createParticles(this.x, this.y, this.type);
+                    return true;
+                }
+                return false;
+            }
+            
+            reachBase() {
+                gameState.lives--;
+                updateUI();
+                this.hp = 0;
+                if (gameState.lives <= 0) gameOver();
+            }
+        }
+        
+        // 炮塔类
+        class Tower {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.range = type === 'linear' ? 120 : (type === 'quad' ? 150 : 100);
+                this.cooldown = 0;
+                this.maxCooldown = type === 'linear' ? 60 : (type === 'quad' ? 90 : 45);
+                this.damage = type === 'linear' ? 15 : (type === 'quad' ? 25 : 20);
+                this.cost = type === 'linear' ? 50 : (type === 'quad' ? 80 : 100);
+            }
+            
+            update() {
+                if (this.cooldown > 0) this.cooldown--;
+                
+                if (this.cooldown <= 0 && !gameState.waitingForAnswer) {
+                    const target = this.findTarget();
+                    if (target) {
+                        this.attack(target);
+                    }
+                }
+            }
+            
+            findTarget() {
+                for (let enemy of gameState.enemies) {
+                    const dist = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+                    if (dist <= this.range) return enemy;
+                }
+                return null;
+            }
+            
+            attack(target) {
+                gameState.waitingForAnswer = true;
+                gameState.currentTarget = target;
+                gameState.currentTower = this;
+                
+                const gen = questionGenerators[this.type];
+                gameState.currentQuestion = gen();
+                
+                showQuestion(gameState.currentQuestion);
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // 绘制射程范围（半透明）
+                if (gameState.selectedTower === this.type) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.range, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // 绘制炮塔
+                if (this.type === 'linear') {
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillRect(-20, -20, 40, 40);
+                    ctx.fillStyle = '#c0392b';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -30);
+                    ctx.lineTo(10, -10);
+                    ctx.lineTo(-10, -10);
+                    ctx.fill();
+                } else if (this.type === 'quad') {
+                    ctx.fillStyle = '#3498db';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#2980b9';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -25);
+                    ctx.lineTo(22, 12);
+                    ctx.lineTo(-22, 12);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                // 冷却指示
+                if (this.cooldown > 0) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(-20, 25, 40 * (this.cooldown / this.maxCooldown), 5);
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        // 炮弹类
+        class Projectile {
+            constructor(x, y, target, damage) {
+                this.x = x;
+                this.y = y;
+                this.target = target;
+                this.damage = damage;
+                this.speed = 8;
+                this.active = true;
+            }
+            
+            update() {
+                if (!this.target || this.target.hp <= 0) {
+                    this.active = false;
+                    return;
+                }
+                
+                const dx = this.target.x - this.x;
+                const dy = this.target.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 10) {
+                    if (this.target.takeDamage(this.damage)) {
+                        gameState.enemies = gameState.enemies.filter(e => e !== this.target);
+                    }
+                    this.active = false;
+                } else {
+                    this.x += (dx / dist) * this.speed;
+                    this.y += (dy / dist) * this.speed;
+                }
+            }
+            
+            draw() {
+                ctx.fillStyle = '#f1c40f';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // 粒子效果
+        function createParticles(x, y, type) {
+            const colors = {linear: '#e74c3c', quad: '#3498db', geo: '#2ecc71'};
+            const color = colors[type];
+            for (let i = 0; i < 8; i++) {
+                gameState.particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    life: 30,
+                    color: color
+                });
+            }
+        }
+        
+        // 游戏循环
+        function gameLoop() {
+            if (!gameState.isPlaying) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制路径
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 30;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.stroke();
+            
+            // 更新和绘制炮塔
+            gameState.towers.forEach(tower => {
+                tower.update();
+                tower.draw();
+            });
+            
+            // 更新和绘制敌人
+            gameState.enemies = gameState.enemies.filter(enemy => enemy.hp > 0);
+            gameState.enemies.forEach(enemy => {
+                enemy.update();
+                enemy.draw();
+            });
+            
+            // 更新和绘制炮弹
+            gameState.projectiles = gameState.projectiles.filter(p => p.active);
+            gameState.projectiles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            
+            // 粒子
+            gameState.particles = gameState.particles.filter(p => p.life > 0);
+            gameState.particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                ctx.globalAlpha = p.life / 30;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+            });
+            ctx.globalAlpha = 1;
+            
+            // 检查波次结束
+            if (gameState.waveInProgress && gameState.enemies.length === 0 && !gameState.waitingForAnswer) {
+                waveComplete();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 生成波次
+        function startWave() {
+            gameState.waveInProgress = true;
+            let count = 5 + gameState.wave * 2;
+            let spawned = 0;
+            
+            const spawnInterval = setInterval(() => {
+                if (!gameState.isPlaying) {
+                    clearInterval(spawnInterval);
+                    return;
+                }
+                
+                const types = ['linear', 'quad', 'geo'];
+                const type = types[Math.floor(Math.random() * Math.min(gameState.wave, 3))];
+                gameState.enemies.push(new Enemy(gameState.wave, type));
+                spawned++;
+                
+                if (spawned >= count) {
+                    clearInterval(spawnInterval);
+                }
+            }, 1500);
+        }
+        
+        // 显示题目
+        function showQuestion(q) {
+            document.getElementById('questionText').textContent = q.text;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('questionPanel').style.display = 'block';
+            document.getElementById('answerInput').focus();
+        }
+        
+        // 提交答案
+        function submitAnswer() {
+            const input = document.getElementById('answerInput');
+            const userAnswer = parseFloat(input.value);
+            const correctAnswer = gameState.currentQuestion.answer;
+            
+            if (Math.abs(userAnswer - correctAnswer) < 0.01) {
+                // 答对了
+                showFeedback('正确！+' + gameState.currentTower.damage + '伤害', 'correct');
+                gameState.projectiles.push(new Projectile(
+                    gameState.currentTower.x,
+                    gameState.currentTower.y,
+                    gameState.currentTarget,
+                    gameState.currentTower.damage
+                ));
+                gameState.currentTower.cooldown = gameState.currentTower.maxCooldown;
+                gameState.score += 5;
+            } else {
+                // 答错了
+                showFeedback('错误！正确答案是' + correctAnswer, 'wrong');
+                gameState.currentTower.cooldown = gameState.currentTower.maxCooldown * 2;
+            }
+            
+            document.getElementById('questionPanel').style.display = 'none';
+            gameState.waitingForAnswer = false;
+            updateUI();
+        }
+        
+        // 显示反馈
+        function showFeedback(text, type) {
+            const fb = document.getElementById('feedback');
+            fb.textContent = text;
+            fb.className = type;
+            fb.style.opacity = '1';
+            fb.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            
+            setTimeout(() => {
+                fb.style.transition = 'all 0.5s';
+                fb.style.opacity = '0';
+                fb.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 1000);
+        }
+        
+        // 选择炮塔类型
+        function selectTower(type) {
+            if (document.querySelector(`[data-type="${type}"]`).classList.contains('locked')) {
+                if (gameState.wave < 3 && type === 'geo') {
+                    alert('几何炮塔第3波解锁！');
+                    return;
+                }
+            }
+            gameState.selectedTower = type;
+            document.querySelectorAll('.tower-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+        }
+        
+        // 放置炮塔
+        canvas.addEventListener('click', (e) => {
+            if (!gameState.isPlaying || gameState.waitingForAnswer) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 检查是否在路径上
+            let onPath = false;
+            for (let i = 0; i < path.length - 1; i++) {
+                const p1 = path[i], p2 = path[i+1];
+                const dist = pointToLineDistance(x, y, p1.x, p1.y, p2.x, p2.y);
+                if (dist < 30) onPath = true;
+            }
+            
+            if (onPath) {
+                showFeedback('不能在路径上建塔！', 'wrong');
+                return;
+            }
+            
+            // 检查是否重叠
+            for (let tower of gameState.towers) {
+                if (Math.hypot(tower.x - x, tower.y - y) < 40) {
+                    showFeedback('这里已有炮塔！', 'wrong');
+                    return;
+                }
+            }
+            
+            // 检查金币
+            const costs = {linear: 50, quad: 80, geo: 100};
+            if (gameState.money < costs[gameState.selectedTower]) {
+                showFeedback('金币不足！', 'wrong');
+                return;
+            }
+            
+            // 建造
+            gameState.money -= costs[gameState.selectedTower];
+            gameState.towers.push(new Tower(x, y, gameState.selectedTower));
+            updateUI();
+            createParticles(x, y, gameState.selectedTower);
+        });
+        
+        function pointToLineDistance(px, py, x1, y1, x2, y2) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            if (lenSq !== 0) param = dot / lenSq;
+            let xx, yy;
+            if (param < 0) {
+                xx = x1; yy = y1;
+            } else if (param > 1) {
+                xx = x2; yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            const dx = px - xx;
+            const dy = py - yy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        // UI更新
+        function updateUI() {
+            document.getElementById('lives').textContent = gameState.lives;
+            document.getElementById('money').textContent = gameState.money;
+            document.getElementById('wave').textContent = gameState.wave;
+            document.getElementById('score').textContent = gameState.score;
+        }
+        
+        // 游戏控制
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('towerSelector').style.display = 'flex';
+            gameState.isPlaying = true;
+            gameState.lives = 20;
+            gameState.money = 100;
+            gameState.wave = 1;
+            gameState.score = 0;
+            gameState.towers = [];
+            gameState.enemies = [];
+            gameState.projectiles = [];
+            updateUI();
+            startWave();
+            gameLoop();
+        }
+        
+        function restartGame() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            startGame();
+        }
+        
+        function gameOver() {
+            gameState.isPlaying = false;
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+        
+        function waveComplete() {
+            gameState.waveInProgress = false;
+            gameState.money += 50;
+            updateUI();
+            
+            if (gameState.wave === 2) {
+                document.querySelector('[data-type="geo"]').classList.remove('locked');
+            }
+            
+            document.getElementById('levelCompleteScreen').classList.remove('hidden');
+        }
+        
+        function nextWave() {
+            document.getElementById('levelCompleteScreen').classList.add('hidden');
+            gameState.wave++;
+            updateUI();
+            startWave();
+        }
+        
+        function showTutorial() {
+            document.getElementById('tutorial').style.display = 'block';
+        }
+        
+        function hideTutorial() {
+            document.getElementById('tutorial').style.display = 'none';
+        }
+        
+        // 键盘事件
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitAnswer();
+        });
+        
+        // 初始化
+        updateUI();
+    </script>
+</body>
+</html>
