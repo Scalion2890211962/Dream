@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环球能源环 - 全球清洁能源网络</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            background: #f0f8ff;
+            overflow: hidden;
+        }
+        /* 游戏容器 */
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: url("https://picsum.photos/id/1015/1920/1080") no-repeat center;
+            background-size: cover;
+        }
+        /* 游戏标题 */
+        .game-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 28px;
+            text-shadow: 0 0 10px #000;
+            text-align: center;
+        }
+        /* 能源基地样式 */
+        .energy-base {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            text-align: center;
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+        .energy-base:hover {
+            transform: scale(1.1);
+        }
+        /* 不同能源基地配色 */
+        .sahara {
+            background: linear-gradient(#ff9800, #e65100); /* 撒哈拉光伏 - 橙黄 */
+            top: 30%;
+            left: 25%;
+        }
+        .middle-east {
+            background: linear-gradient(#ffeb3b, #f57f17); /* 中东光热 - 金黄 */
+            top: 25%;
+            left: 30%;
+        }
+        .arctic {
+            background: linear-gradient(#2196f3, #0d47a1); /* 北极风电 - 深蓝 */
+            top: 15%;
+            left: 45%;
+        }
+        .south-america {
+            background: linear-gradient(#4caf50, #1b5e20); /* 南美水电 - 深绿 */
+            top: 40%;
+            left: 35%;
+        }
+        .australia {
+            background: linear-gradient(#e91e63, #880e4f); /* 澳洲太阳能 - 玫红 */
+            top: 45%;
+            left: 60%;
+        }
+        /* 电网连线 */
+        .power-line {
+            position: absolute;
+            height: 4px;
+            background: linear-gradient(#00ffea, #00838f);
+            transform-origin: left center;
+            z-index: 1;
+            display: none;
+            box-shadow: 0 0 10px #00ffea;
+        }
+        /* 游戏状态面板 */
+        .status-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        /* 成功提示 */
+        .success-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: #00ffea;
+            padding: 40px 60px;
+            border-radius: 15px;
+            font-size: 24px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+        .success-modal button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #00ffea;
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-size: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-title">环球能源环 - 搭建全球清洁能源主干网</div>
+        
+        <!-- 能源基地 -->
+        <div class="energy-base sahara" data-name="撒哈拉光伏">撒哈拉光伏</div>
+        <div class="energy-base middle-east" data-name="中东光热">中东光热</div>
+        <div class="energy-base arctic" data-name="北极风电">北极风电</div>
+        <div class="energy-base south-america" data-name="南美水电">南美水电</div>
+        <div class="energy-base australia" data-name="澳洲太阳能">澳洲太阳能</div>
+        
+        <!-- 电网连线（预定义所有可能的连接） -->
+        <div class="power-line line-1"></div>
+        <div class="power-line line-2"></div>
+        <div class="power-line line-3"></div>
+        <div class="power-line line-4"></div>
+        <div class="power-line line-5"></div>
+        
+        <!-- 状态面板 -->
+        <div class="status-panel">已连接能源基地：0/5 | 目标：连接所有基地，构建全球能源环</div>
+        
+        <!-- 成功提示 -->
+        <div class="success-modal">
+            恭喜！<br>你已成功搭建全球统一能源主干网<br>
+            全球实现24小时稳定清洁能源供应！
+            <button onclick="restartGame()">重新挑战</button>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let selectedBase = null; // 选中的第一个基地
+        let connectedCount = 0; // 已连接的基地数
+        const totalBases = 5; // 总基地数
+        const bases = document.querySelectorAll('.energy-base');
+        const lines = document.querySelectorAll('.power-line');
+        const statusPanel = document.querySelector('.status-panel');
+        const successModal = document.querySelector('.success-modal');
+        
+        // 初始化游戏
+        initGame();
+        
+        function initGame() {
+            // 为每个能源基地绑定点击事件
+            bases.forEach(base => {
+                base.addEventListener('click', selectBase);
+            });
+        }
+        
+        // 选择能源基地
+        function selectBase(e) {
+            const currentBase = e.target;
+            
+            // 如果未选中任何基地，标记当前基地为选中
+            if (!selectedBase) {
+                selectedBase = currentBase;
+                selectedBase.style.boxShadow = "0 0 20px #00ffea";
+                return;
+            }
+            
+            // 如果选中的是同一个基地，取消选中
+            if (selectedBase === currentBase) {
+                selectedBase.style.boxShadow = "0 0 15px rgba(0,0,0,0.5)";
+                selectedBase = null;
+                return;
+            }
+            
+            // 连接两个基地
+            connectBases(selectedBase, currentBase);
+            
+            // 重置选中状态
+            selectedBase.style.boxShadow = "0 0 15px rgba(0,0,0,0.5)";
+            selectedBase = null;
+            
+            // 更新状态面板
+            connectedCount++;
+            statusPanel.textContent = `已连接能源基地：${connectedCount}/${totalBases} | 目标：连接所有基地，构建全球能源环`;
+            
+            // 检查是否完成游戏
+            if (connectedCount >= totalBases - 1) {
+                showSuccess();
+            }
+        }
+        
+        // 绘制两个基地之间的电网连线
+        function connectBases(base1, base2) {
+            // 获取两个基地的位置
+            const rect1 = base1.getBoundingClientRect();
+            const rect2 = base2.getBoundingClientRect();
+            
+            // 计算连线的起点、终点、长度和角度
+            const x1 = rect1.left + rect1.width / 2;
+            const y1 = rect1.top + rect1.height / 2;
+            const x2 = rect2.left + rect2.width / 2;
+            const y2 = rect2.top + rect2.height / 2;
+            
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            // 选择一个未使用的连线元素
+            const line = Array.from(lines).find(l => !l.style.display || l.style.display === 'none');
+            if (line) {
+                line.style.display = 'block';
+                line.style.left = `${x1}px`;
+                line.style.top = `${y1}px`;
+                line.style.width = `${length}px`;
+                line.style.transform = `rotate(${angle}deg)`;
+            }
+        }
+        
+        // 显示成功提示
+        function showSuccess() {
+            successModal.style.display = 'block';
+            // 让所有连线闪烁
+            lines.forEach(line => {
+                if (line.style.display === 'block') {
+                    line.style.animation = "blink 1s infinite";
+                }
+            });
+            // 添加闪烁动画样式
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes blink {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                    100% { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // 重新开始游戏
+        function restartGame() {
+            // 重置所有状态
+            selectedBase = null;
+            connectedCount = 0;
+            statusPanel.textContent = `已连接能源基地：0/${totalBases} | 目标：连接所有基地，构建全球能源环`;
+            
+            // 隐藏连线和成功提示
+            lines.forEach(line => {
+                line.style.display = 'none';
+                line.style.animation = '';
+            });
+            successModal.style.display = 'none';
+            
+            // 重置基地样式
+            bases.forEach(base => {
+                base.style.boxShadow = "0 0 15px rgba(0,0,0,0.5)";
+            });
+        }
+    </script>
+</body>
+</html>
