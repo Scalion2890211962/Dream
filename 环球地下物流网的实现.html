@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环球地下物流主干网</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+
+        body {
+            background: #0f172a;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* 顶部标题栏 */
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-bottom: 1px solid #334155;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #38bdf8;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        /* 核心优势模块 */
+        .advantage {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 30px 20px;
+            flex-wrap: wrap;
+        }
+
+        .advantage-item {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 10px;
+            width: 200px;
+            text-align: center;
+            border: 1px solid #38bdf8;
+        }
+
+        .advantage-item h3 {
+            color: #38bdf8;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .advantage-item p {
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        /* 物流网络可视化区域 */
+        .network {
+            position: relative;
+            height: 500px;
+            margin: 20px auto;
+            max-width: 1200px;
+            background: #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        /* 城市节点 */
+        .city {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #38bdf8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f172a;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+            z-index: 2;
+        }
+
+        .city:hover {
+            transform: scale(1.2);
+        }
+
+        /* 地下管道线路 */
+        .pipe {
+            position: absolute;
+            background: linear-gradient(90deg, #60a5fa, #38bdf8);
+            height: 8px;
+            transform-origin: left center;
+            z-index: 1;
+            border-radius: 4px;
+        }
+
+        /* 无人货运舱动画 */
+        .cargo {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #fbbf24;
+            border-radius: 50%;
+            animation: moveCargo linear infinite;
+            z-index: 3;
+        }
+
+        @keyframes moveCargo {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(100% - 16px)); }
+        }
+
+        /* 底部说明 */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 14px;
+            border-top: 1px solid #334155;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .network {
+                height: 400px;
+            }
+            .advantage-item {
+                width: 100%;
+                max-width: 200px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部标题 -->
+    <div class="header">
+        <h1>环球地下物流主干网</h1>
+        <p>卡车/货车退出地表 · 公路仅服务于人 · 物流零事故/零拥堵/零排放</p>
+    </div>
+
+    <!-- 核心优势 -->
+    <div class="advantage">
+        <div class="advantage-item">
+            <h3>零事故</h3>
+            <p>无人化运营，消除人为操作风险</p>
+        </div>
+        <div class="advantage-item">
+            <h3>零拥堵</h3>
+            <p>地下专属管道，无路面交通干扰</p>
+        </div>
+        <div class="advantage-item">
+            <h3>零排放</h3>
+            <p>电力驱动，全程无尾气污染</p>
+        </div>
+    </div>
+
+    <!-- 物流网络可视化 -->
+    <div class="network" id="network">
+        <!-- 城市节点（动态生成） -->
+        <!-- 管道线路（动态生成） -->
+        <!-- 货运舱（动态生成） -->
+    </div>
+
+    <!-- 底部说明 -->
+    <div class="footer">
+        <p>© 2026 环球地下物流主干网 - 地表交通减负 · 物流效率升级</p>
+    </div>
+
+    <script>
+        // 城市数据（名称、坐标）
+        const cities = [
+            { name: "北京", x: 200, y: 200 },
+            { name: "上海", x: 800, y: 250 },
+            { name: "广州", x: 700, y: 400 },
+            { name: "深圳", x: 750, y: 420 },
+            { name: "成都", x: 400, y: 350 },
+            { name: "西安", x: 300, y: 250 }
+        ];
+
+        // 管道线路（起点城市、终点城市）
+        const pipes = [
+            { from: "北京", to: "上海" },
+            { from: "北京", to: "西安" },
+            { from: "上海", to: "广州" },
+            { from: "广州", to: "深圳" },
+            { from: "西安", to: "成都" },
+            { from: "成都", to: "广州" }
+        ];
+
+        const network = document.getElementById("network");
+
+        // 1. 创建城市节点
+        cities.forEach(city => {
+            const cityEl = document.createElement("div");
+            cityEl.className = "city";
+            cityEl.style.left = `${city.x}px`;
+            cityEl.style.top = `${city.y}px`;
+            cityEl.textContent = city.name;
+            cityEl.title = `${city.name} 地下物流枢纽`;
+            network.appendChild(cityEl);
+        });
+
+        // 2. 创建管道线路
+        pipes.forEach(pipe => {
+            // 获取起点和终点坐标
+            const fromCity = cities.find(c => c.name === pipe.from);
+            const toCity = cities.find(c => c.name === pipe.to);
+            
+            if (!fromCity || !toCity) return;
+
+            // 计算管道长度和角度
+            const dx = toCity.x - fromCity.x;
+            const dy = toCity.y - fromCity.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            // 创建管道元素
+            const pipeEl = document.createElement("div");
+            pipeEl.className = "pipe";
+            pipeEl.style.left = `${fromCity.x}px`;
+            pipeEl.style.top = `${fromCity.y}px`;
+            pipeEl.style.width = `${length}px`;
+            pipeEl.style.transform = `rotate(${angle}deg)`;
+            network.appendChild(pipeEl);
+
+            // 3. 创建货运舱（动画效果）
+            const cargo = document.createElement("div");
+            cargo.className = "cargo";
+            cargo.style.left = `${fromCity.x}px`;
+            cargo.style.top = `${fromCity.y}px`;
+            cargo.style.transform = `rotate(${angle}deg)`;
+            cargo.style.animationDuration = `${Math.random() * 10 + 10}s`; // 随机动画时长（10-20秒）
+            // 货运舱沿管道移动的容器
+            const cargoContainer = document.createElement("div");
+            cargoContainer.style.position = "absolute";
+            cargoContainer.style.left = `${fromCity.x}px`;
+            cargoContainer.style.top = `${fromCity.y}px`;
+            cargoContainer.style.width = `${length}px`;
+            cargoContainer.style.transform = `rotate(${angle}deg)`;
+            cargoContainer.style.transformOrigin = "left center";
+            cargoContainer.appendChild(cargo);
+            network.appendChild(cargoContainer);
+        });
+    </script>
+</body>
+</html>
